@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="format-detection" content="telephone=no"/>
+  <meta name="format-detection" content="telephone=no">
+  <title>UX测试2</title>
+  <!--<link rel="stylesheet" href="assets/css/main.css"/>-->
+</head>
+<style>
+  body{
+    background-color: red;
+  }
+  .try1{
+    width: 50px;
+    height: 50px;
+    background-color: #000;
+  }
+  .try2{
+    width: 50px;
+    height: 50px;
+    background-color:   #000;
+  }
+  div:hover
+{
+  border: 1px solid yellow;
+}
+.ux-dfborder{
+  border: 1px solid yellow;
+}
+</style>
+<body>
+<header>
+  <p>UX测试2ss</p>
+</header>
+
+<section>
+  <div class="try1">
+haha
+  </div>
+  <div class="try2">
+heihei
+  </div>
+  <div class="try3">
+
+  </div>
+  <div class="try4">
+
+  </div>
+  <div class="try5">
+
+  </div>
+  <div class="try6">
+
+  </div>
+</section>
+</body>
+<script src="assets/js/jquery-2.1.1.min.js"></script>
+<script>
+  $('div').on("click",function(){
+    $("div").removeClass("ux-dfborder");
+    $(this).addClass("ux-dfborder");  
+    console.log( $(this).width());
+    console.log( $(this).height());
+    console.log( $(this).position().left);
+    console.log( $(this).position().top);
+    $('input.wmark', window.parent.document).val("haha")
+       
+  })
+</script>
+</html>

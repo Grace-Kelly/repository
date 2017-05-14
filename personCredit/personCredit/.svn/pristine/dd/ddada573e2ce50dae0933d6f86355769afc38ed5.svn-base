@@ -1,0 +1,133 @@
+package com.csmf.service.impl;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+
+import com.csmf.common.StatusCode;
+import com.csmf.dao.ISeqNoDAO;
+import com.csmf.dao.PersonCertDao;
+import com.csmf.dao.UserRegisterDao;
+import com.csmf.dto.send.SendAllSkills;
+import com.csmf.dto.send.SendCertificate;
+import com.csmf.service.FabricService;
+import com.csmf.service.PersonCertService;
+import com.csmf.util.DateUtil;
+
+import net.sf.json.JSONObject;
+
+@Service("personCertService")
+public class PersonCertServiceImpl implements PersonCertService {
+
+	private Log log = LogFactory.getLog(this.getClass());
+
+	@Resource
+	private PersonCertDao personCertDao;
+
+	@Resource
+	private ISeqNoDAO seqNoDAO;
+
+	@Resource
+	private UserRegisterDao userRegisterDao;
+
+	@Resource
+	private FabricService fabricService;
+
+	public Map<String, Object> saveCertInfo(Map<String, Object> param) throws Exception {
+		Map<String, Object> result = new HashMap<String, Object>();
+		if (param != null) {
+			String telPhone = (String) param.get("telPhone");
+			String saveFlag = (String) param.get("saveFlag");
+			param.put("id", seqNoDAO.getFlwNo("PS", "C"));
+			if (!StringUtils.isEmpty(telPhone)) {
+				Map personMap = userRegisterDao.queryPersonInfo(telPhone);
+				String identityNum = (String) personMap.get("identityNum");
+				String sendFlag = (String) personMap.get("sendFlag");
+				if (!StringUtils.isEmpty(saveFlag)) {
+					if ("local".equals(saveFlag)) {
+						personCertDao.saveCertInfo(param);
+						result.put(StatusCode.STATUS, StatusCode.STATUS_OK);
+						result.put(StatusCode.MSG, "保存成功");
+					}
+					if ("block".equals(saveFlag)) {
+						String json = beanToJson(param);
+						result = fabricService.sendToBlock(sendFlag, identityNum, json);
+						if (StatusCode.STATUS_FAIL.equals((String) result.get(StatusCode.STATUS))) {
+							return result;
+						}
+						personCertDao.saveCertInfo(param);
+					}
+				} else {
+					result.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+					result.put(StatusCode.MSG, "保存失败,参数出错");
+				}
+			} else {
+				result.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+				result.put(StatusCode.MSG, "信息丢失");
+			}
+		} else {
+			result.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+			result.put(StatusCode.MSG, "参数为空");
+		}
+		return result;
+	}
+
+	public Map<String, Object> updateCertInfoById(Map<String, Object> param) throws Exception {
+		String saveFlag = (String) param.get("saveFlag");
+		String telPhone = (String) param.get("telPhone");
+		Map<String, Object> resultMap = new HashMap<String, Object>();
+		if (!StringUtils.isEmpty(saveFlag)) {
+			if ("local".equals(saveFlag)) {
+				personCertDao.updateCertInfoById(param);// 更新
+				resultMap.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+				resultMap.put(StatusCode.MSG, "保存成功");
+			}
+			if ("block".equals(saveFlag)) {
+				Map<String, Object> personMap = userRegisterDao.queryPersonInfo(telPhone);
+				String sendFlag = (String) personMap.get("sendFlag");
+				String identityNum = (String) personMap.get("identityNum");
+				resultMap = fabricService.sendToBlock(sendFlag, identityNum, beanToJson(param));
+				if (StatusCode.STATUS_FAIL.equals((String) resultMap.get(StatusCode.STATUS))) {
+					return resultMap;
+				}
+				personCertDao.updateCertInfoById(param);
+			}
+		} else {
+			resultMap.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+			resultMap.put(StatusCode.MSG, "保存失败,参数出错");
+		}
+		return resultMap;
+	}
+
+	public List queryCertInfoById(String memberId) throws Exception {
+		List resultList = null;
+		try {
+			resultList = personCertDao.queryCertInfoById(memberId);
+		} catch (Exception e) {
+			log.error("查询证书失败：", e);
+		}
+		return resultList;
+	}
+
+	public String beanToJson(Map<String, Object> param) throws Exception {
+		SendCertificate cert = new SendCertificate();
+		if (param != null) {
+			cert.setCertificateTime((String) param.get("certificateTime"));
+			cert.setCertificateType((String) param.get("certificateType"));
+			cert.setName((String) param.get("name"));
+			JSONObject obj = JSONObject.fromObject(cert);
+			return obj.toString();
+		} else {
+			throw new Exception("请求失败，参数为空");
+		}
+	}
+
+}

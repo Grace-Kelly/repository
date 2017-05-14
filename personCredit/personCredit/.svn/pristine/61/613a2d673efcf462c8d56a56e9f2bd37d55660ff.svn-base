@@ -1,0 +1,1033 @@
+package com.csmf.controller;
+
+import java.io.PrintWriter;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import com.csmf.common.Encryption;
+import com.csmf.common.StatusCode;
+import com.csmf.dao.ISeqNoDAO;
+import com.csmf.service.PersonAllSkillService;
+import com.csmf.service.PersonCertService;
+import com.csmf.service.PersonEducationService;
+import com.csmf.service.PersonInfoService;
+import com.csmf.service.PersonProjectService;
+import com.csmf.service.PersonTrainService;
+import com.csmf.service.PersonWorkService;
+import com.csmf.service.UserRegisterService;
+import com.csmf.util.RequestJsonFormat;
+import com.csmf.util.ValidationUtil;
+
+import net.sf.json.JSONObject;
+
+@Controller
+@RequestMapping("/personCenter")
+public class PersonCenterController {
+
+	private Log log = LogFactory.getLog(this.getClass());
+	@Resource
+	private UserRegisterService registerService;
+
+	@Resource
+	private PersonInfoService personInfoService;
+	
+	@Resource
+	private PersonEducationService personEducationService;
+	
+	@Resource
+	private PersonWorkService personWorkService;
+	
+	@Resource
+	private PersonProjectService personProjectService;
+	
+	@Resource
+	private PersonTrainService personTrainService;
+	
+	@Resource
+	private PersonAllSkillService personAllSkillService;
+	
+	@Resource
+	private PersonCertService personCertService;
+	
+	@Resource
+	private ISeqNoDAO seqNoDAO;
+
+	/**
+	 * @Title: modifyPassword
+	 * @Description: 修改个人密码
+	 * @param request
+	 *            请求服务器对象HttpServletRequest
+	 * @param response
+	 *            服务器返回对象HttpServletResponse
+	 * @return void 返回类型
+	 * @throws
+	 **/
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	@RequestMapping("/modifyPwd.do")
+	public void modifyPassword(HttpServletRequest request, HttpServletResponse response) {
+		PrintWriter out = null;
+		String resultStr = null;
+		Map resultMap = null;
+		try {
+			out = response.getWriter();
+			String telPhone = (String) request.getSession().getAttribute("telPhone");
+			if (telPhone != null && !telPhone.equals("")) {
+				JSONObject jsonObject = RequestJsonFormat.toJsonObject(request);
+				if (jsonObject != null && jsonObject.has("userPwd") && jsonObject.has("userNewPwd")
+						&& jsonObject.has("userRePwd")) {
+					// 校验密码正确性
+					String userPwd = (String) jsonObject.get("userPwd");
+					String userNewPwd = (String) jsonObject.get("userNewPwd");
+					String userRePwd = (String) jsonObject.get("userRePwd");
+					if (userNewPwd.equals(userRePwd)) {
+						Map personMap = registerService.queryPersonInfo(telPhone);
+						String password = (String) personMap.get("password");
+						// 原始密码加密
+						userPwd = Encryption.MD5Encrypt(userPwd);
+						if (userPwd.equals(password)) {
+							// 保存新密码 update
+							Map param = new HashMap();
+							param.put("telPhone", telPhone);
+							param.put("password", userPwd);
+							registerService.updatePwdByTelPhone(param);
+							resultMap.put("status", true);
+							resultMap.put("successMsg", "密码修改成功");
+						} else {
+							resultMap.put("status", false);
+							resultMap.put("errorMsg", "初始密码错误");
+						}
+					} else {// 不相等
+						resultMap.put("status", false);
+						resultMap.put("errorMsg", "新密码与重复密码不一致");
+					}
+				} else {
+					resultMap.put("status", false);
+					resultMap.put("errorMsg", "原始密码或者新密码或重复密码不能为空");
+				}
+				resultMap.put("status", true);
+				JSONObject obj = JSONObject.fromObject(resultMap);
+				out.write(obj.toString());
+			} else {
+				resultMap.put("status", false);
+				resultMap.put("errorMsg", "会话超时");
+				JSONObject obj = JSONObject.fromObject(resultMap);
+				out.write(obj.toString());
+			}
+		} catch (Exception e) {
+			catchException(resultMap, out, e, "修改密码失败");
+		} finally {
+			if (out != null)
+				out.close();
+		}
+	}
+
+	/**
+	 * @Title: modifyEmail
+	 * @Description: 修改个人邮箱
+	 * @param request
+	 *            请求服务器对象HttpServletRequest
+	 * @param response
+	 *            服务器返回对象HttpServletResponse
+	 * @return void 返回类型
+	 */
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	@RequestMapping("/modifyEmail.do")
+	public void modifyEmail(HttpServletRequest request, HttpServletResponse response) {
+		PrintWriter out = null;
+		String resultStr = null;
+		Map resultMap = new HashMap();
+		try {
+			out = response.getWriter();
+			String telPhone = (String) request.getSession().getAttribute("telPhone");
+			if (telPhone != null && !telPhone.equals("")) {
+				JSONObject jsonObject = RequestJsonFormat.toJsonObject(request);
+				String newEmail = (String) jsonObject.get("email");
+				if (ValidationUtil.validateEmail(newEmail)) {
+					Map param = new HashMap();
+					param.put("telPhone", telPhone);
+					param.put("email", newEmail);
+					registerService.updatePwdByTelPhone(param);
+					resultMap.put("status", true);
+					resultMap.put("successMsg", "邮箱修改成功");
+				} else {
+					resultMap.put("status", false);
+					resultMap.put("errorMsg", "邮箱格式不正确");
+				}
+			}
+			JSONObject obj = JSONObject.fromObject(resultMap);
+			out.write(resultStr = obj.toString());
+			log.info(resultStr);
+		} catch (Exception e) {
+			catchException(resultMap, out, e, "修改邮箱失败");
+		} finally {
+			if (out != null)
+				out.close();
+		}
+	}
+
+	/**
+	 * @Title: modifyTelPhone
+	 * @Description: 修改个人手机号码
+	 * @param request
+	 *            请求服务器对象HttpServletRequest
+	 * @param response
+	 *            服务器返回对象HttpServletResponse
+	 * @return void 返回类型
+	 */
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	@RequestMapping("/modifyTelPhone.do")
+	public void modifyTelPhone(HttpServletRequest request, HttpServletResponse response) {
+		PrintWriter out = null;
+		String resultStr = null;
+		Map resultMap = new HashMap();
+		try {
+			out = response.getWriter();
+			String telPhone = (String) request.getSession().getAttribute("telPhone");
+			if (telPhone != null && !telPhone.equals("")) {
+				JSONObject jsonObject = RequestJsonFormat.toJsonObject(request);
+				String newTelPhone = (String) jsonObject.get("telPhone");
+				if (ValidationUtil.validateTelPhone(newTelPhone)) {
+					if (!registerService.isExistUserByPhone(newTelPhone)) {
+						Map param = new HashMap();
+						param.put("newTelPhone", newTelPhone);
+						param.put("telPhone", telPhone);
+						registerService.updateTelPhoneByTelPhone(param);
+						resultMap.put("status", true);
+						resultMap.put("successMsg", "手机号修改成功");
+					} else {
+						resultMap.put("status", false);
+						resultMap.put("successMsg", "此手机号的账号已存在");
+					}
+				} else {
+					resultMap.put("status", false);
+					resultMap.put("errorMsg", "手机格式不正确");
+				}
+			}
+			JSONObject obj = JSONObject.fromObject(resultMap);
+			out.write(resultStr = obj.toString());
+			log.info(resultStr);
+		} catch (Exception e) {
+			catchException(resultMap, out, e, "修改手机号失败");
+		} finally {
+			if (out != null)
+				out.close();
+		}
+	}
+	
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	@RequestMapping("/showTel.do")
+	public void showTel(HttpServletRequest request, HttpServletResponse response) {
+		Map resultMap = new HashMap();
+		PrintWriter out = null;
+		Map<String, Object> paramMap = new HashMap<String, Object>();
+		try {
+			out = response.getWriter();
+			String telPhone = (String) request.getSession().getAttribute("telPhone");
+			if(!StringUtils.isEmpty(telPhone)){
+				resultMap.put(StatusCode.STATUS, StatusCode.STATUS_OK);
+				resultMap.put(StatusCode.MSG, "请求成功");
+				resultMap.put(StatusCode.STATUS_RESULT, telPhone);
+			}else{
+				resultMap.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+				resultMap.put(StatusCode.STATUS, "请先登录");
+			}
+			JSONObject obj = JSONObject.fromObject(resultMap);
+			out.write(obj.toString());
+		}catch (Exception e) {
+			catchException(resultMap, out, e, "电话查询失败");
+		} finally {
+			if (out != null)
+				out.close();
+		}
+	}
+
+	/**
+	 * 修改个人信息
+	 * 
+	 * @param request
+	 *            请求服务器对象HttpServletRequest
+	 * @param response
+	 *            服务器返回对象HttpServletResponse
+	 * @return void 返回类型
+	 */
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	@RequestMapping("/modifyInfo.do")
+	public void modifyInfo(HttpServletRequest request, HttpServletResponse response) {
+		Map resultMap = new HashMap();
+		PrintWriter out = null;
+		Map<String, Object> paramMap = new HashMap<String, Object>();
+		try {
+			out = response.getWriter();
+			String telPhone = (String) request.getSession().getAttribute("telPhone");
+			String memberId = (String) request.getSession().getAttribute("memberId");
+			if (telPhone == null || telPhone.equals("") || memberId == null || "".equals(memberId)) {
+				JSONObject jsonObject = RequestJsonFormat.toJsonObject(request);
+				String name = (String) jsonObject.get("name");
+				String saveFlag = (String) jsonObject.get("saveFlag");// local为暂存，block为提交
+				String identityNum = (String) jsonObject.get("identityNum");
+				Date createTime = new Date();
+				String email = (String) jsonObject.get("email");
+				String origin = (String) jsonObject.get("origin");
+				String gender = (String) jsonObject.get("gender");
+				String highestEducation = (String) jsonObject.get("highestEducation");
+				String political = (String) jsonObject.get("political");
+				String nation = (String) jsonObject.get("nation");
+				String residence = (String) jsonObject.get("residence");
+				String marry = (String) jsonObject.get("marry");
+				String bornYear = (String) jsonObject.get("bornYear");
+				String workYear = (String) jsonObject.get("workYear");
+				String address = (String) jsonObject.get("address");
+				/**
+				 * 校验信息
+				 */
+				paramMap.put("name", name);
+				paramMap.put("identityNum", identityNum);
+				paramMap.put("origin", origin);
+				paramMap.put("highestEducation", highestEducation);
+				paramMap.put("political", political);
+				paramMap.put("nation", nation);
+				paramMap.put("residence", residence);
+				paramMap.put("marry", marry);
+				paramMap.put("gender", gender);
+				paramMap.put("bornYear", bornYear);
+				paramMap.put("workYear", workYear);
+				paramMap.put("address", address);
+				paramMap.put("email", email);
+				paramMap.put("telPhone", telPhone);
+				paramMap.put("memberId", memberId);
+				paramMap.put("createTime", createTime);
+				paramMap.put("updateTime", createTime);
+				resultMap = personInfoService.updatePersonInfoByTel(paramMap);// 更新
+				JSONObject obj = JSONObject.fromObject(resultMap);
+				out.write(obj.toString());
+			} else {
+				catchException(resultMap, out, new Exception("登录异常:telPhone:" + telPhone + ",memberId:" + memberId),
+						"登录异常");
+			}
+		} catch (Exception e) {
+			catchException(resultMap, out, e, "个人基本信息保存失败");
+		} finally {
+			if (out != null)
+				out.close();
+		}
+	}
+	
+	
+	/**
+	 * 修改个人教育
+	 * 
+	 * @param request
+	 *            请求服务器对象HttpServletRequest
+	 * @param response
+	 *            服务器返回对象HttpServletResponse
+	 * @return void 返回类型
+	 */
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	@RequestMapping("/modifyEduc.do")
+	public void modifyEduc(HttpServletRequest request, HttpServletResponse response) {
+		Map resultMap = null;
+		PrintWriter out = null;
+		Map param = new HashMap();
+		try {
+			out = response.getWriter();
+			resultMap = new HashMap();
+			String telPhone = (String) request.getSession().getAttribute("telPhone");
+			String memberId = (String) request.getSession().getAttribute("memberId");
+			JSONObject jsonObject = RequestJsonFormat.toJsonObject(request);
+			if(jsonObject!=null){
+				
+			}
+			if (telPhone == null || telPhone.equals("") || memberId==null||"".equals(memberId)) {
+				String saveFlag = (String) jsonObject.get("saveFlag");// local为暂存，block为提交
+				String newFlag = (String) jsonObject.get("newFlag");
+				String  id = (String) jsonObject.get("id");//要修改的id
+				if(StringUtils.isEmpty(id)){
+					resultMap.put("status", false);
+					resultMap.put("errrorMsg", "编号不能为空");
+					JSONObject obj = JSONObject.fromObject(resultMap);
+					out.write(obj.toString());
+					return;
+				}
+				String  admissionTime = (String) jsonObject.get("admissionTime");
+				String  graduationTime = (String) jsonObject.get("graduationTime");
+				String  schoolName = (String) jsonObject.get("schoolName");
+				String  educationBackground = (String) jsonObject.get("educationBackground");
+				String  credentials = (String) jsonObject.get("credentials");
+				String  major = (String) jsonObject.get("major");
+				
+				/*
+				 * 校验数据正确性
+				 */
+				param.put("id",id);
+				param.put("memberId", memberId);
+				param.put("admissionTime", new Date());
+				param.put("graduationTime", new Date());
+				param.put("schoolName", schoolName);
+				param.put("educationBackground", educationBackground);
+				param.put("credentials", credentials);
+				param.put("major", major);
+				param.put("createTime", new Date());
+				param.put("remark", "");
+				param.put("status", "0");//状态这里设置有问题
+				param.put("update_time", new Date());
+				param.put("file_id", "");
+				param.put("saveFlag", "local");//保存本地数据库
+				personEducationService.updateEducationInfoById(param);
+				JSONObject obj = JSONObject.fromObject(resultMap);
+				out.write(obj.toString());
+			} else {
+				catchException(resultMap, out, new Exception("登录异常:telPhone:"+telPhone+",memberId:"+memberId), "登录异常");
+			}
+		} catch (Exception e) {
+			catchException(resultMap, out, e, "保存教育资料失败");
+		} finally {
+			if (out != null)
+				out.close();
+		}
+	}
+	
+	/**
+	 * 修改个人工作
+	 * 
+	 * @param request
+	 *            请求服务器对象HttpServletRequest
+	 * @param response
+	 *            服务器返回对象HttpServletResponse
+	 * @return void 返回类型
+	 */
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	@RequestMapping("/modifyWork.do")
+	public void modifyWork(HttpServletRequest request, HttpServletResponse response) {
+		Map resultMap = null;
+		PrintWriter out = null;
+		Map param = new HashMap();
+		try {
+			resultMap = new HashMap();
+			out = response.getWriter();
+			String telPhone = (String) request.getSession().getAttribute("telPhone");
+			String memberId = (String) request.getSession().getAttribute("memberId");
+			if (telPhone == null || telPhone.equals("") || memberId==null||"".equals(memberId)) {
+				JSONObject jsonObject = RequestJsonFormat.toJsonObject(request);
+				String saveFlag = (String) jsonObject.get("saveFlag");// local为暂存，block为提交
+				String newFlag = (String) jsonObject.get("newFlag");
+				String  id = (String) jsonObject.get("id");//要修改的id
+				if(StringUtils.isEmpty(id)){
+					resultMap.put("status", false);
+					resultMap.put("errrorMsg", "编号不能为空");
+					JSONObject obj = JSONObject.fromObject(resultMap);
+					out.write(obj.toString());
+					return;
+				}
+				String entryTime = (String) jsonObject.get("entryTime");
+				String dimissionTime = (String) jsonObject.get("dimissionTime");
+				String companyName = (String) jsonObject.get("companyName");
+				String position = (String) jsonObject.get("position");
+				String workDescription = (String) jsonObject.get("workDescription");
+				String trade = (String) jsonObject.get("trade");
+				String department = (String) jsonObject.get("department");
+				/*
+				 * 校验数据正确性
+				 */
+				param.put("id", id);
+				param.put("memberId", memberId);
+				param.put("entryTime", new Date());
+				param.put("dimissionTime", new Date());
+				param.put("companyName", companyName);
+				param.put("position", position);
+				param.put("jobDescription", workDescription);
+				param.put("trade", trade);
+				param.put("department", department);
+				param.put("createTime", new Date());
+				param.put("saveFlag", "local");//保存本地数据库
+				param.put("remark", "");
+				if (!StringUtils.isEmpty(saveFlag) && "local".equals(saveFlag)) {
+					if(!StringUtils.isEmpty(newFlag)&& "add".equals(newFlag)){
+						param.put("id", seqNoDAO.getFlwNo("PS","W"));
+						personWorkService.savePersonWorkInfo(param);//新增
+					}else{
+						personWorkService.updateWorkInfoBy(param);// 更新
+					}
+				}
+				if (!StringUtils.isEmpty(saveFlag) && "block".equals(saveFlag)) {
+					Map personMap = registerService.queryPersonInfo(telPhone);
+					String status = (String) personMap.get("status");
+					String sendFlag = (String) personMap.get("sendFlag");
+					String finishFlag = (String) personMap.get("finishFlag");// 是否已发送给区块链
+					// 是否已发送给区块链
+					if (!StringUtils.isEmpty(sendFlag) && StatusCode.SEND_FABRIC_TRUE.equals(sendFlag)) {
+						// 发送给区块链
+						/**
+						 * dosomething
+						 */
+						// 更新本地库
+						param.put("saveFlag", "block");
+						if(!StringUtils.isEmpty(newFlag)&& "add".equals(newFlag)){
+							param.put("id", seqNoDAO.getFlwNo("PS","W"));
+							personWorkService.savePersonWorkInfo(param);
+						}else{
+							personWorkService.updateWorkInfoBy(param);// 更新
+						}
+					} else if (!StringUtils.isEmpty(status) && StatusCode.CERTIFICATION_FLAG_SUCCESS.equals(status)) {// 是否实名认证
+						if(!StringUtils.isEmpty(status) && StatusCode.PERSON_RESUME_FLAG.equals(status)){//简历是否填全
+							// 发送给去区块链
+							/**
+							 * dosomething
+							 */
+							// 更新本地库
+							param.put("saveFlag", "block");
+							if(!StringUtils.isEmpty(newFlag)&& "add".equals(newFlag)){
+								param.put("id", seqNoDAO.getFlwNo("PS","W"));
+								personWorkService.savePersonWorkInfo(param);
+							}else{
+								personWorkService.updateWorkInfoBy(param);// 更新
+							}
+						}else{
+							resultMap.put("status", false);
+							resultMap.put("errorMsg", "简历还未填全");
+							JSONObject obj = JSONObject.fromObject(resultMap);
+							out.write(obj.toString());
+							return ;
+						}
+					}else{
+						resultMap.put("status", false);
+						resultMap.put("errorMsg", "还未实名认证");
+						JSONObject obj = JSONObject.fromObject(resultMap);
+						out.write(obj.toString());
+						return ;
+					}
+				}
+				resultMap.put("status", true);
+				JSONObject obj = JSONObject.fromObject(resultMap);
+				out.write(obj.toString());
+			} else {
+				catchException(resultMap, out, new Exception("登录异常:telPhone:"+telPhone+",memberId:"+memberId), "登录异常");
+			}
+		} catch (Exception e) {
+			catchException(resultMap, out, e, "保存工作经验失败");
+		} finally {
+			if (out != null)
+				out.close();
+		}
+	}
+	
+	/**
+	 * 简历工作参与项目信息添加
+	 * 
+	 * @param request
+	 *            请求服务器信息HttpServletRequest
+	 * @param response
+	 *            服务器返回响应信息HttpServletResponse
+	 * @return void 返回类型
+	 */
+	@SuppressWarnings("unchecked")
+	@RequestMapping("/modifyProject.do")
+	public void modifyProject(HttpServletRequest request, HttpServletResponse response) {
+		Map resultMap = null;
+		PrintWriter out = null;
+		Map param = new HashMap();
+		try {
+			out = response.getWriter();
+			String telPhone = (String) request.getSession().getAttribute("telPhone");
+			String memberId = (String) request.getSession().getAttribute("memberId");
+			if (telPhone == null || telPhone.equals("") || memberId==null||"".equals(memberId)) {
+				JSONObject jsonObject = RequestJsonFormat.toJsonObject(request);
+				String saveFlag = (String) jsonObject.get("saveFlag");// local为暂存，block为提交
+				String newFlag = (String) jsonObject.get("newFlag");
+				String  id = (String) jsonObject.get("id");//要修改的id
+				if(StringUtils.isEmpty(id)){
+					resultMap.put("status", false);
+					resultMap.put("errrorMsg", "编号不能为空");
+					JSONObject obj = JSONObject.fromObject(resultMap);
+					out.write(obj.toString());
+					return;
+				}
+				String projectBeginTime = (String) jsonObject.get("projectBeginTime");
+				String projectEndTime = (String) jsonObject.get("projectEndTime");
+				String companyName = (String) jsonObject.get("companyName");
+				String projectDescription = (String) jsonObject.get("projectDescription");
+				String responsibility = (String) jsonObject.get("responsibility");
+				String skillId = (String)jsonObject.get("skillId");
+				String workId = (String)jsonObject.get("workId");
+				/*
+				 * 校验数据正确性
+				 */
+				param.put("id",id);
+				param.put("memberId", memberId);
+				param.put("projectBeginTime", new Date());
+				param.put("projectEndTime", new Date());
+				param.put("companyName", companyName);
+				param.put("projectDescription", projectDescription);
+				param.put("responsibility", responsibility);
+				param.put("skillId", skillId);
+				param.put("workId", workId);
+				param.put("saveFlag", "local");//保存本地数据库
+				param.put("remark", "");
+				if (!StringUtils.isEmpty(saveFlag) && "local".equals(saveFlag)) {
+					if(!StringUtils.isEmpty(newFlag)&& "add".equals(newFlag)){
+						param.put("id", seqNoDAO.getFlwNo("PS","P"));
+						param.put("createTime", new Date());
+						param.put("updateTime", new Date());
+						personProjectService.savePersonProjectInfo(param);
+					}else{
+						param.put("updateTime", new Date());
+						personProjectService.updatePersonProjectById(param);// 更新
+					}
+				}
+				if (!StringUtils.isEmpty(saveFlag) && "block".equals(saveFlag)) {
+					Map personMap = registerService.queryPersonInfo(telPhone);
+					String status = (String) personMap.get("status");
+					String sendFlag = (String) personMap.get("sendFlag");
+					String finishFlag = (String) personMap.get("finishFlag");// 是否已发送给区块链
+					// 是否已发送给区块链
+					if (!StringUtils.isEmpty(sendFlag) && StatusCode.SEND_FABRIC_TRUE.equals(sendFlag)) {
+						// 发送给区块链
+						/**
+						 * dosomething
+						 */
+						// 更新本地库
+						param.put("saveFlag", "block");
+						if(!StringUtils.isEmpty(newFlag)&& "add".equals(newFlag)){
+							param.put("id", seqNoDAO.getFlwNo("PS","P"));
+							param.put("createTime", new Date());
+							param.put("updateTime", new Date());
+							personProjectService.savePersonProjectInfo(param);
+						}else{
+							param.put("updateTime", new Date());
+							personProjectService.updatePersonProjectById(param);// 更新
+						}
+					} else if (!StringUtils.isEmpty(status) && StatusCode.CERTIFICATION_FLAG_SUCCESS.equals(status)) {// 是否实名认证
+						if(!StringUtils.isEmpty(status) && StatusCode.PERSON_RESUME_FLAG.equals(status)){//简历是否填全
+							// 发送给去区块链
+							/**
+							 * dosomething
+							 */
+							// 更新本地库
+							param.put("saveFlag", "block");
+							if(!StringUtils.isEmpty(newFlag)&& "add".equals(newFlag)){
+								param.put("id", seqNoDAO.getFlwNo("PS","P"));
+								param.put("createTime", new Date());
+								param.put("updateTime", new Date());
+								personProjectService.savePersonProjectInfo(param);
+							}else{
+								param.put("updateTime", new Date());
+								personProjectService.updatePersonProjectById(param);// 更新
+							}
+						}else{
+							resultMap.put("status", false);
+							resultMap.put("errorMsg", "简历还未填全");
+							JSONObject obj = JSONObject.fromObject(resultMap);
+							out.write(obj.toString());
+							return ;
+						}
+					}else{
+						resultMap.put("status", false);
+						resultMap.put("errorMsg", "还未实名认证");
+						JSONObject obj = JSONObject.fromObject(resultMap);
+						out.write(obj.toString());
+						return ;
+					}
+				}
+				resultMap.put("status", true);
+				JSONObject obj = JSONObject.fromObject(resultMap);
+				out.write(obj.toString());
+			} else {
+				catchException(resultMap, out, new Exception("登录异常:telPhone:"+telPhone+",memberId:"+memberId), "登录异常");
+			}
+		} catch (Exception e) {
+			catchException(resultMap, out, e, "项目信息保存出错");
+		} finally {
+			if (out != null)
+				out.close();
+		}
+	}
+	
+	/**
+	 * 修改培训
+	 * 
+	 * @param request
+	 *            请求服务器信息HttpServletRequest
+	 * @param response
+	 *            服务器返回响应信息HttpServletResponse
+	 * @return void 返回类型
+	 */
+	@RequestMapping("/modifyTrain.do")
+	public void modifyTrain(HttpServletRequest request, HttpServletResponse response) {
+		Map resultMap = new HashMap();
+		PrintWriter out = null;
+		Map param = new HashMap();
+		try {
+			out = response.getWriter();
+			String telPhone = (String) request.getSession().getAttribute("telPhone");
+			String memberId = (String) request.getSession().getAttribute("memberId");
+			if (telPhone == null || telPhone.equals("") || memberId==null||"".equals(memberId)) {
+				JSONObject jsonObject = RequestJsonFormat.toJsonObject(request);
+				String saveFlag = (String) jsonObject.get("saveFlag");// local为暂存，block为提交
+				String newFlag = (String) jsonObject.get("newFlag");
+				String  id = (String) jsonObject.get("id");//要修改的id
+				if(StringUtils.isEmpty(id)){
+					resultMap.put("status", false);
+					resultMap.put("errrorMsg", "编号不能为空");
+					JSONObject obj = JSONObject.fromObject(resultMap);
+					out.write(obj.toString());
+					return;
+				}
+				String startTime = (String) jsonObject.get("startTime");
+				String endTime = (String) jsonObject.get("endTime");
+				String companyName = (String) jsonObject.get("companyName");
+				String trainingDescription = (String) jsonObject.get("trainingDescription");
+				String trainingName = (String) jsonObject.get("trainingName");
+				/*
+				 * 校验数据正确性
+				 */
+				param.put("id", id);
+				param.put("memberId", memberId);
+				param.put("startTime", new Date());
+				param.put("endTime", new Date());
+				param.put("companyName", companyName);
+				param.put("trainingDescription", trainingDescription);
+				param.put("trainingName", trainingName);
+				param.put("saveFlag", "local");//保存本地数据库
+				param.put("remark", "");
+				if (!StringUtils.isEmpty(saveFlag) && "local".equals(saveFlag)) {
+					if(!StringUtils.isEmpty(newFlag)&& "add".equals(newFlag)){
+						param.put("id", seqNoDAO.getFlwNo("PS","T"));
+						param.put("createTime", new Date());
+						param.put("updateTime", new Date());
+						personTrainService.saveTrainInfo(param);
+					}else{
+						param.put("updateTime", new Date());
+						personTrainService.updateTrainById(param);
+					}
+				}
+				if (!StringUtils.isEmpty(saveFlag) && "block".equals(saveFlag)) {
+					Map personMap = registerService.queryPersonInfo(telPhone);
+					String status = (String) personMap.get("status");
+					String sendFlag = (String) personMap.get("sendFlag");
+					String finishFlag = (String) personMap.get("finishFlag");// 是否已发送给区块链
+					// 是否已发送给区块链
+					if (!StringUtils.isEmpty(sendFlag) && StatusCode.SEND_FABRIC_TRUE.equals(sendFlag)) {
+						// 发送给区块链
+						/**
+						 * dosomething
+						 */
+						// 更新本地库
+						param.put("saveFlag", "block");
+						if(!StringUtils.isEmpty(newFlag)&& "add".equals(newFlag)){
+							param.put("id", seqNoDAO.getFlwNo("PS","T"));
+							param.put("createTime", new Date());
+							param.put("updateTime", new Date());
+							personTrainService.saveTrainInfo(param);
+						}else{
+							param.put("updateTime", new Date());
+							personTrainService.updateTrainById(param);// 更新
+						}
+					} else if (!StringUtils.isEmpty(status) && StatusCode.CERTIFICATION_FLAG_SUCCESS.equals(status)) {// 是否实名认证
+						if(!StringUtils.isEmpty(status) && StatusCode.PERSON_RESUME_FLAG.equals(status)){//简历是否填全
+							// 发送给去区块链
+							/**
+							 * dosomething
+							 */
+							// 更新本地库
+							param.put("saveFlag", "block");
+							if(!StringUtils.isEmpty(newFlag)&& "add".equals(newFlag)){
+								param.put("id", seqNoDAO.getFlwNo("PS","T"));
+								param.put("createTime", new Date());
+								param.put("updateTime", new Date());
+								personTrainService.saveTrainInfo(param);
+							}else{
+								param.put("updateTime", new Date());
+								personTrainService.updateTrainById(param);// 更新
+							}
+						}else{
+							resultMap.put("status", false);
+							resultMap.put("errorMsg", "简历还未填全");
+							JSONObject obj = JSONObject.fromObject(resultMap);
+							out.write(obj.toString());
+							return ;
+						}
+					}else{
+						resultMap.put("status", false);
+						resultMap.put("errorMsg", "还未实名认证");
+						JSONObject obj = JSONObject.fromObject(resultMap);
+						out.write(obj.toString());
+						return ;
+					}
+				}
+				resultMap.put("status", true);
+				JSONObject obj = JSONObject.fromObject(resultMap);
+				out.write(obj.toString());
+			} else {
+				catchException(resultMap, out, new Exception("登录异常:telPhone:"+telPhone+",memberId:"+memberId), "登录异常");
+			}
+		} catch (Exception e) {
+			catchException(resultMap, out, e, "项目信息保存出错");
+		} finally {
+			if (out != null)
+				out.close();
+		}
+	}
+	
+	/**
+	 * 修改证书
+	 * 
+	 * @param request
+	 *            请求服务器信息HttpServletRequest
+	 * @param response
+	 *            服务器返回响应信息HttpServletResponse
+	 * @return void 返回类型
+	 */
+	@RequestMapping("/modifyCert.do")
+	public void modifyCert(HttpServletRequest request, HttpServletResponse response) {
+		Map resultMap = new HashMap();
+		PrintWriter out = null;
+		Map param = new HashMap();
+		try {
+			out = response.getWriter();
+			String telPhone = (String) request.getSession().getAttribute("telPhone");
+			String memberId = (String) request.getSession().getAttribute("memberId");
+			if (telPhone == null || telPhone.equals("") || memberId==null||"".equals(memberId)) {
+				JSONObject jsonObject = RequestJsonFormat.toJsonObject(request);
+				String saveFlag = (String) jsonObject.get("saveFlag");// local为暂存，block为提交
+				String newFlag = (String) jsonObject.get("newFlag");//add为新增
+				String  id = (String) jsonObject.get("id");//要修改的id
+				if(StringUtils.isEmpty(id)){
+					resultMap.put("status", false);
+					resultMap.put("errrorMsg", "编号不能为空");
+					JSONObject obj = JSONObject.fromObject(resultMap);
+					out.write(obj.toString());
+					return;
+				}
+				String certificateTime = (String) jsonObject.get("certificateTime");
+				String name = (String) jsonObject.get("name");
+				String certificateType = (String) jsonObject.get("certificateType");
+				/*
+				 * 校验数据正确性
+				 */
+				param.put("id",id);
+				param.put("memberId", memberId);
+				param.put("certificateTime", new Date());
+				param.put("name",name);
+				param.put("saveFlag", "local");//保存本地数据库
+				param.put("remark", "");
+				if (!StringUtils.isEmpty(saveFlag) && "local".equals(saveFlag)) {
+					if(!StringUtils.isEmpty(newFlag)&& "add".equals(newFlag)){
+						param.put("id", seqNoDAO.getFlwNo("PS","C"));
+						param.put("createTime", new Date());
+						param.put("updateTime", new Date());
+						personCertService.saveCertInfo(param);
+					}else{
+						param.put("updateTime", new Date());
+						personCertService.updateCertInfoById(param);
+					}
+				}
+				if (!StringUtils.isEmpty(saveFlag) && "block".equals(saveFlag)) {
+					Map personMap = registerService.queryPersonInfo(telPhone);
+					String status = (String) personMap.get("status");
+					String sendFlag = (String) personMap.get("sendFlag");
+					String finishFlag = (String) personMap.get("finishFlag");// 是否已发送给区块链
+					// 是否已发送给区块链
+					if (!StringUtils.isEmpty(sendFlag) && StatusCode.SEND_FABRIC_TRUE.equals(sendFlag)) {
+						// 发送给区块链
+						/**
+						 * dosomething
+						 */
+						// 更新本地库
+						param.put("saveFlag", "block");
+						if(!StringUtils.isEmpty(newFlag)&& "add".equals(newFlag)){
+							param.put("id", seqNoDAO.getFlwNo("PS","C"));
+							param.put("createTime", new Date());
+							param.put("updateTime", new Date());
+							personCertService.saveCertInfo(param);
+						}else{
+							param.put("updateTime", new Date());
+							personCertService.updateCertInfoById(param);//更新
+						}
+					} else if (!StringUtils.isEmpty(status) && StatusCode.CERTIFICATION_FLAG_SUCCESS.equals(status)) {// 是否实名认证
+						if(!StringUtils.isEmpty(status) && StatusCode.PERSON_RESUME_FLAG.equals(status)){//简历是否填全
+							// 发送给去区块链
+							/**
+							 * dosomething
+							 */
+							// 更新本地库
+							param.put("saveFlag", "block");
+							if(!StringUtils.isEmpty(newFlag)&& "add".equals(newFlag)){
+								param.put("id", seqNoDAO.getFlwNo("PS","C"));
+								param.put("createTime", new Date());
+								param.put("updateTime", new Date());
+								personCertService.saveCertInfo(param);
+							}else{
+								param.put("updateTime", new Date());
+								personCertService.updateCertInfoById(param);//更新
+							}
+						}else{
+							resultMap.put("status", false);
+							resultMap.put("errorMsg", "简历还未填全");
+							JSONObject obj = JSONObject.fromObject(resultMap);
+							out.write(obj.toString());
+							return ;
+						}
+					}else{
+						resultMap.put("status", false);
+						resultMap.put("errorMsg", "还未实名认证");
+						JSONObject obj = JSONObject.fromObject(resultMap);
+						out.write(obj.toString());
+						return ;
+					}
+				}
+				resultMap.put("status", true);
+				JSONObject obj = JSONObject.fromObject(resultMap);
+				out.write(obj.toString());
+			} else {
+				catchException(resultMap, out, new Exception("登录异常:telPhone:"+telPhone+",memberId:"+memberId), "登录异常");
+			}
+		} catch (Exception e) {
+			catchException(resultMap, out, e, "项目信息保存出错");
+		} finally {
+			if (out != null)
+				out.close();
+		}
+	}
+	
+	
+	/**
+	 * 修改技能
+	 * 
+	 * @param request
+	 *            请求服务器信息HttpServletRequest
+	 * @param response
+	 *            服务器返回响应信息HttpServletResponse
+	 * @return void 返回类型
+	 */
+	@RequestMapping("/modifySkill.do")
+	public void modifySkill(HttpServletRequest request, HttpServletResponse response) {
+		Map resultMap = new HashMap();
+		PrintWriter out = null;
+		Map param = new HashMap();
+		try {
+			out = response.getWriter();
+			String telPhone = (String) request.getSession().getAttribute("telPhone");
+			String memberId = (String) request.getSession().getAttribute("memberId");
+			if (telPhone == null || telPhone.equals("") || memberId==null||"".equals(memberId)) {
+				JSONObject jsonObject = RequestJsonFormat.toJsonObject(request);
+				String saveFlag = (String) jsonObject.get("saveFlag");// local为暂存，block为提交
+				String newFlag = (String) jsonObject.get("newFlag");//add为新增
+				String  id = (String) jsonObject.get("id");//要修改的id
+				if(StringUtils.isEmpty(id)){
+					resultMap.put("status", false);
+					resultMap.put("errrorMsg", "编号不能为空");
+					JSONObject obj = JSONObject.fromObject(resultMap);
+					out.write(obj.toString());
+					return;
+				}
+				String skillType = (String) jsonObject.get("skillType");
+				String skillNum = (String) jsonObject.get("skillNum");
+				String Proficiency = (String) jsonObject.get("Proficiency");//熟练度
+				/*
+				 * 校验数据正确性
+				 */
+				param.put("id", seqNoDAO.getFlwNo("PS", "S"));
+				param.put("memberId", memberId);
+				param.put("skillType", skillType);
+				param.put("skillNum",skillNum);
+				param.put("Proficiency",Proficiency);
+				param.put("saveFlag", "local");//保存本地数据库
+				param.put("remark", "");
+				if (!StringUtils.isEmpty(saveFlag) && "local".equals(saveFlag)) {
+					if(!StringUtils.isEmpty(newFlag)&& "add".equals(newFlag)){
+						param.put("id", seqNoDAO.getFlwNo("PS","S"));
+						param.put("createTime", new Date());
+						param.put("updateTime", new Date());
+						personAllSkillService.savePersonSkills(param);
+					}else{
+						param.put("updateTime", new Date());
+						personAllSkillService.updatePersonSkillById(param);
+					}
+				}
+				if (!StringUtils.isEmpty(saveFlag) && "block".equals(saveFlag)) {
+					Map personMap = registerService.queryPersonInfo(telPhone);
+					String status = (String) personMap.get("status");
+					String sendFlag = (String) personMap.get("sendFlag");
+					String finishFlag = (String) personMap.get("finishFlag");// 是否已发送给区块链
+					// 是否已发送给区块链
+					if (!StringUtils.isEmpty(sendFlag) && StatusCode.SEND_FABRIC_TRUE.equals(sendFlag)) {
+						// 发送给区块链
+						/**
+						 * dosomething
+						 */
+						// 更新本地库
+						param.put("saveFlag", "block");
+						if(!StringUtils.isEmpty(newFlag)&& "add".equals(newFlag)){
+							param.put("id", seqNoDAO.getFlwNo("PS","S"));
+							param.put("createTime", new Date());
+							param.put("updateTime", new Date());
+							personAllSkillService.savePersonSkills(param);
+						}else{
+							param.put("updateTime", new Date());
+							personAllSkillService.updatePersonSkillById(param);//更新
+						}
+					} else if (!StringUtils.isEmpty(status) && StatusCode.CERTIFICATION_FLAG_SUCCESS.equals(status)) {// 是否实名认证
+						if(!StringUtils.isEmpty(status) && StatusCode.PERSON_RESUME_FLAG.equals(status)){//简历是否填全
+							// 发送给去区块链
+							/**
+							 * dosomething
+							 */
+							// 更新本地库
+							param.put("saveFlag", "block");
+							if(!StringUtils.isEmpty(newFlag)&& "add".equals(newFlag)){
+								param.put("id", seqNoDAO.getFlwNo("PS","S"));
+								param.put("createTime", new Date());
+								param.put("updateTime", new Date());
+								personAllSkillService.savePersonSkills(param);
+							}else{
+								param.put("updateTime", new Date());
+								personAllSkillService.updatePersonSkillById(param);//更新
+							}
+						}else{
+							resultMap.put("status", false);
+							resultMap.put("errorMsg", "简历还未填全");
+							JSONObject obj = JSONObject.fromObject(resultMap);
+							out.write(obj.toString());
+							return ;
+						}
+					}else{
+						resultMap.put("status", false);
+						resultMap.put("errorMsg", "还未实名认证");
+						JSONObject obj = JSONObject.fromObject(resultMap);
+						out.write(obj.toString());
+						return ;
+					}
+				}
+				resultMap.put("status", true);
+				JSONObject obj = JSONObject.fromObject(resultMap);
+				out.write(obj.toString());
+			} else {
+				catchException(resultMap, out, new Exception("登录异常:telPhone:"+telPhone+",memberId:"+memberId), "登录异常");
+			}
+		} catch (Exception e) {
+			catchException(resultMap, out, e, "项目信息保存出错");
+		} finally {
+			if (out != null)
+				out.close();
+		}
+	}
+
+	private void catchException(Map result, PrintWriter out, Exception e, String message) {
+		log.error("异常错误信息：" + e);
+		e.printStackTrace();
+		result.put("status", false);
+		result.put("errorMsg", message);
+		JSONObject obj = JSONObject.fromObject(result);
+		out.write(obj.toString());
+	}
+}

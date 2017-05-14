@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html>
-
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width">
@@ -10,16 +9,61 @@
   <meta name="format-detection" content="email=no"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-statues-bar-style" content="black"/>
+  <link type="text/css" rel="stylesheet" href="//unpkg.com/bootstrap@next/dist/css/bootstrap.min.css"/>
+<link type="text/css" rel="stylesheet" href="//unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.css"/>
   <title>xiaomoshi</title>
 </head>
 <style> 
-body{
-  margin: 0;
+/*                        -- css reset  -                     */
+* {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	font-size: 100%;
+	font: inherit;
+	vertical-align: baseline;
 }
-div{
+/* HTML5 display-role reset for older browsers */
+
+body {
+	line-height: 1;
+}
+ol, ul {
+	list-style: none;
+}
+
+
+table {
+	border-collapse: collapse;
+	border-spacing: 0;
+}
+ 
+
+/*                        -- css base  -                     */		
+
+div,li,ul,ol{
  display: inline-block;
  vertical-align: top;
- padding-top: 1px;
+ overflow: hidden;
+ /*padding-top: 1px;*/
+ /*	*/
+}
+div:before, div:after {
+	content: '';
+	content: none;
+}
+img{
+ width: 100%;
+ vertical-align: top; 
+ height: auto;
+}
+.row-box{
+  overflow: hidden;
+  display: block;
+  white-space: nowrap;
+}
+#app{
+  width: 100%;
 }
 </style>
 <body>

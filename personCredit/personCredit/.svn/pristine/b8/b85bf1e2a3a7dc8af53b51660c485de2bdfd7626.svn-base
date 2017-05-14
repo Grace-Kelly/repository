@@ -1,0 +1,49 @@
+package com.csmf.service.impl;
+
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.stereotype.Service;
+
+import com.csmf.dao.PersonAllSkillDao;
+import com.csmf.service.PersonAllSkillService;
+
+@Service("personAllSkillService")
+public class PersonAllSkillServiceImpl implements PersonAllSkillService {
+
+	private Log log = LogFactory.getLog(this.getClass());
+
+	@Resource
+	private PersonAllSkillDao personAllSkillDao;
+
+	public void savePersonSkills(Map<String, Object> param){
+		try{
+			personAllSkillDao.savePersonSkills(param);
+		}catch (Exception e) {
+			log.error("保存技能失败：",e);
+		}
+	}
+
+	public void updatePersonSkillById(Map<String, Object> param) {
+		try{
+			personAllSkillDao.updatePersonSkillById(param);
+		}catch (Exception e) {
+			log.error("修改个人所有技能失败：",e);
+		}
+	}
+
+	public List querySkillById(String memberId){
+		List resultList = null;
+		try{
+			resultList =  personAllSkillDao.querySkillById(memberId);
+		}catch (Exception e) {
+			log.error("查询技能失败：",e);
+		}
+		return resultList;
+	}
+
+}

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+<script type="text/javascript" src="js/jquery-1.8.3.min.js"></script>
+</head>
+<body>
+	<div>
+		公司企业名称:<input type="text" id="companyNo"><br/>
+		个人账号名:<input type="text" id="personNo"><br/>
+		密码:<input type="text" id="passwd"><br/>
+		<button id="submit">提交</button>
+	</div>
+</body>
+</html>
+<script>
+	$(function(){
+		$("#submit").click(function(){
+			var companyNo = $("#companyNo").val();
+			var personNo = $("#personNo").val();
+			var passwd = $("#passwd").val();
+			var login = {
+					"companyNo":companyNo,
+					"personNo":personNo,
+					"passwd":passwd
+			}
+			console.log(JSON.stringify(login))
+			$.ajax({
+				type:"post",
+				url:"companyAdmin/companyLogin.do",
+		    	data:JSON.stringify(login),
+		    	dataType:"json",
+		    	contentType:"application/json",
+				success:function(data){
+		    		alert(data.msg)
+		    	},
+			 		error:function(){
+			 			alert('系统异常');
+			 	}
+			});
+		});
+		
+	});
+</script>

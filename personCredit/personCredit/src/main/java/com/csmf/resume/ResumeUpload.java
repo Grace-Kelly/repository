@@ -1,0 +1,468 @@
+package com.csmf.resume;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.hyperledger.fabric.sdkintegration.SampleStore;
+import org.hyperledger.fabric.sdkintegration.SampleUser;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.csmf.common.StatusCode;
+import com.csmf.dao.CompanyAdminDao;
+import com.csmf.dao.ISeqNoDAO;
+import com.csmf.dao.PersonInfoDao;
+import com.csmf.dao.SecretKeyDAO;
+import com.csmf.dto.Certificate;
+import com.csmf.dto.EduExperience;
+import com.csmf.dto.LanguageSkill;
+import com.csmf.dto.ProjectExperience;
+import com.csmf.dto.Resume;
+import com.csmf.dto.TrainExperience;
+import com.csmf.dto.WorkExperience;
+import com.csmf.dto.send.SendAllSkills;
+import com.csmf.dto.send.SendCertificate;
+import com.csmf.dto.send.SendEducation;
+import com.csmf.dto.send.SendPersonInfo;
+import com.csmf.dto.send.SendProject;
+import com.csmf.dto.send.SendTrain;
+import com.csmf.dto.send.SendWork;
+import com.csmf.service.DictionaryService;
+import com.csmf.service.FabricService;
+import com.csmf.service.PersonInfoService;
+import com.csmf.util.DateUtil;
+import com.csmf.util.RSA;
+
+import net.sf.json.JSONObject;
+
+@Component("resumeUpload")
+public class ResumeUpload implements ResumeUploadService{
+	
+	@Resource
+	JobResume jobResume;
+	@Resource
+	CompanyAdminDao companyAdminDao;
+	@Resource
+	SecretKeyDAO secretKeyDAO;
+	@Resource
+	FabricService fabricService;
+	@Resource
+	PersonInfoDao personInfoDao;
+	@Resource
+	private ISeqNoDAO seqNoDAO;
+	@Resource
+	PersonInfoService personInfoService;
+	@Resource
+	DictionaryService dictionaryService;
+	private Log log = LogFactory.getLog(this.getClass());
+	
+	@Transactional(propagation = Propagation.REQUIRED, timeout = 20, rollbackFor = Exception.class)
+	public Map<String,Object> resumeZipParse(File file,String companyId) throws Exception{
+		
+		Map<String,Object> result = new HashMap<String,Object>();
+		try {
+		ZipFile zf = new ZipFile(file);
+		ZipInputStream zin = new ZipInputStream(new FileInputStream(file));  
+        ZipEntry ze;
+
+		while((ze = zin.getNextEntry()) != null){
+				if(!ze.isDirectory() && !ze.getName().contains("__MACOSX")){
+						long size = ze.getSize();
+						String id = ze.getName();
+						InputStream in = zf.getInputStream(ze);
+						Resume resume = jobResume.parseDoc(in);
+						if(id!=null){
+							String[] split = id.split("\\.", id.length());
+							id = split[0];
+						}
+						
+						//如果没有查询私钥，没有表示企业未认证
+						Map<String,Object> resultMap = secretKeyDAO.querySecretKeyById(companyId);
+						String passwd ="";
+						String pubKey = "";
+						String priKey = "";
+						if(resultMap==null){
+							result.put(StatusCode.MSG, "企业未认证");
+							result.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+							return result;
+						}				
+						passwd = (String) resultMap.get("passwd");
+						
+						//组装json字符串						
+						Map<String,Object> info = saveInfo(resume, id);
+						Map<String,Object> skill = saveAllSkill(resume, id);
+						Map<String,Object> cer =saveCer(resume, id);
+						Map<String,Object> pro =saveProjectEx(resume, id);
+						Map<String,Object> work =saveWork(resume, id);
+						Map<String,Object> train =saveTran(resume, id);
+						Map<String,Object> edu =saveEdu(resume, id);
+						
+						Map<String,Object> map = new HashMap<String, Object>();
+						map.put(StatusCode.JSON_INFO, info.get(StatusCode.JSON_INFO));
+						map.put(StatusCode.JSON_ALL_SKILL, skill.get(StatusCode.JSON_ALL_SKILL));
+						map.put(StatusCode.JSON_CERT, cer.get(StatusCode.JSON_CERT));
+						map.put(StatusCode.JSON_EDUCATION, edu.get(StatusCode.JSON_EDUCATION));
+						map.put(StatusCode.JSON_PROJECT_EXPE, pro.get(StatusCode.JSON_PROJECT_EXPE));
+						map.put(StatusCode.JSON_WORK_EXPE, work.get(StatusCode.JSON_WORK_EXPE));
+						map.put(StatusCode.JSON_TRAIN, train.get(StatusCode.JSON_TRAIN));						
+						JSONObject obj = JSONObject.fromObject(map);						
+						String jsonStr = obj.toString();
+						Map<String,Object> pMap = new HashMap<String, Object>();											
+						pMap.put("id", id);
+						pMap.put("json", jsonStr);
+						pMap.put("login", companyId);
+						Map<String,Object> rMap = fabricService.saveResume(pMap);
+						if(!rMap.get(StatusCode.STATUS).equals(StatusCode.STATUS_OK)){
+							result.put(StatusCode.MSG, rMap.get(StatusCode.MSG));
+							result.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+							return result;
+						}
+				}
+			}
+		zin.closeEntry(); 
+		} catch (Exception e) {		
+			throw new Exception(e);
+		}
+        
+		result.put(StatusCode.MSG, "上传成功");
+		result.put(StatusCode.STATUS, StatusCode.STATUS_OK);
+		return result;
+	}
+	
+	
+	
+	private Map<String,Object> saveEdu(Resume resume,String id) throws Exception{
+		Map<String,Object> resultMap = new HashMap<String,Object>();
+		
+		List<EduExperience> list = resume.getEduEx();
+		List<SendEducation> sendEds = new ArrayList<SendEducation>();
+		SimpleDateFormat format = new SimpleDateFormat("yyyy/MM");
+		List<Map<String,Object>> eduMap = new ArrayList<Map<String,Object>>();
+		for (EduExperience eduExperience : list) {
+			
+			String education =  eduExperience.getEducation();
+			String major = eduExperience.getMajor();
+			String schoolName = eduExperience.getSchoolName();
+			Date start = eduExperience.getStartTime();
+			Date end = eduExperience.getEndTime();
+			
+			SendEducation send = new SendEducation();
+			
+			send.setCredentials(major);
+			
+			send.setSchoolName(schoolName);
+			
+			send.setEducationBackground(education);
+			
+			send.setAdmissionTime(format.format(start));
+			
+			send.setGraduationTime(format.format(end));
+			
+			sendEds.add(send);
+			
+			Map<String,Object> param = new HashMap<String,Object>();
+			
+			param.put("id", seqNoDAO.getFlwNo("PS","E"));
+			param.put("memberId", "");
+			param.put("admissionTime", new Date());
+			param.put("graduationTime", new Date());
+			param.put("schoolName", schoolName);
+			param.put("educationBackground", education);
+			param.put("credentials", major);
+			param.put("major", major);			
+			param.put("remark", "");
+			param.put("status", "0");//状态这里设置有问题			
+			param.put("file_id", "");
+			param.put("saveFlag", "local");//保存本地数据库
+			eduMap.add(param);
+			
+			
+		}
+		
+		resultMap.put(StatusCode.JSON_EDUCATION, sendEds);
+		resultMap.put("edus", eduMap);
+		
+		return resultMap;
+	}
+	
+	private Map<String,Object> saveWork(Resume resume,String id){
+		Map<String,Object> resultMap = new HashMap<String,Object>();
+		List<WorkExperience> works = resume.getWorkEx();
+		SimpleDateFormat format = new SimpleDateFormat("yyyy/MM");
+		List<SendWork> sendWorks = new ArrayList<SendWork>();
+		List<Map<String,Object>> workMap = new ArrayList<Map<String,Object>>();
+		for (WorkExperience work : works) {			
+			 String depName = work.getDepName();
+			 String companyName = work.getCompanyName();
+			 String workDesp = work.getWorkdesp();
+			 String postion = work.getPosition();
+			 Date start= work.getStartTime();
+			 Date end = work.getEndTime();
+			 SendWork sendWork = new SendWork();
+			 
+			 sendWork.setCompanName(companyName);
+			 sendWork.setDepartment(depName);
+			 sendWork.setPosition(postion);
+			 sendWork.setWorkDescription(workDesp);
+			 sendWork.setEntryTime(format.format(start));
+			 sendWork.setDimissionTime(format.format(end));
+			 sendWorks.add(sendWork);
+			 Map<String,Object> param = new HashMap<String, Object>();
+			    param.put("id", id);
+				param.put("memberId", "");
+				param.put("entryTime", new Date());
+				param.put("dimissionTime", new Date());
+				param.put("companyName", companyName);
+				param.put("position", postion);
+				param.put("jobDescription", workDesp);
+				param.put("trade", "");
+				param.put("department", depName);
+				param.put("saveFlag", "local");//保存本地数据库
+				param.put("remark", "");
+				workMap.add(param);
+		}
+		
+		resultMap.put(StatusCode.JSON_WORK_EXPE, sendWorks);
+		resultMap.put("works", workMap);
+		
+		return resultMap;
+	}
+	
+	private Map<String,Object> saveProjectEx(Resume resume,String id) throws Exception{
+		
+		Map<String,Object> resultMap = new HashMap<String,Object>();
+		
+		List<ProjectExperience> projects= resume.getProjectEx();
+		List<SendProject> sendpros = new ArrayList<SendProject>();
+		SimpleDateFormat format = new SimpleDateFormat("yyyy/MM");
+		List<Map<String,Object>> proMap = new ArrayList<Map<String,Object>>();
+		for (ProjectExperience project : projects) {
+			
+			String proName = project.getProjectName();
+			String works = project.getWorkDes();
+			String proDes = project.getProjectDes();
+			Date statrt = project.getStartTime();
+			Date endTime = project.getEndTime();
+			
+			SendProject send = new SendProject();
+			send.setCompanyName("");
+			send.setProjectName(proName);
+			send.setProjectEndTime(format.format(endTime));
+			send.setProjectBeginTime(format.format(statrt));
+			send.setProjectDescription(proDes);
+			send.setResponsibility(works);
+			sendpros.add(send);
+			Map<String,Object> param = new HashMap<String,Object>();
+			param.put("id", seqNoDAO.getFlwNo("PS","P"));
+			param.put("memberId", "");
+			param.put("projectBeginTime", new Date());
+			param.put("projectEndTime", new Date());
+			param.put("companyName", "");
+			param.put("projectDescription", proDes);
+			param.put("responsibility", works);
+			param.put("skillId", "");
+			param.put("workId", "");
+			param.put("saveFlag", "local");//保存本地数据库
+			param.put("remark", "");
+			proMap.add(param);
+		}
+		
+		resultMap.put(StatusCode.JSON_PROJECT_EXPE, sendpros);
+		resultMap.put("pro_map", proMap);
+		return resultMap;
+	}
+	
+	private Map<String,Object> saveAllSkill(Resume resume,String id) throws Exception{
+		
+		List<LanguageSkill> skills = resume.getLanguageSkill();
+		
+		Map<String,Object> resultMap = new HashMap<String, Object>();
+		
+		List<SendAllSkills> sendKills = new ArrayList<SendAllSkills>();
+		
+		List<Map<String,Object>> killMap = new ArrayList<Map<String,Object>>();
+		
+		for (LanguageSkill skill : skills) {
+			
+			SendAllSkills send = new SendAllSkills();
+						
+			String skillName = skill.getSkillName();
+			String levels = skill.getLevel();
+			
+			Map<String,Object> data = new HashMap<String, Object>();
+			
+			data.put("skillName", skillName.toUpperCase());
+			
+			Map<String,Object> rMap=dictionaryService.selectSkillInfoByNameOrId(data);
+			
+			if(rMap!=null && !rMap.isEmpty()){
+				skillName = (String) rMap.get("id");
+			}
+			
+			send.setProficiency(levels);
+			send.setSkillNum(skillName);
+			send.setSkillType("");
+			
+			sendKills.add(send);
+			Map<String,Object> param = new HashMap<String,Object>();
+			param.put("id", seqNoDAO.getFlwNo("PS", "S"));
+			param.put("memberId", "");
+			param.put("skillType", "");
+			param.put("skillNum",skillName);
+			param.put("Proficiency",levels);
+			param.put("saveFlag", "local");//保存本地数据库
+			param.put("remark", "");
+			killMap.add(param);
+			
+		}
+		
+		resultMap.put(StatusCode.JSON_ALL_SKILL, sendKills);
+		resultMap.put("skill_map", killMap);
+		
+		return resultMap;
+	}
+	
+	
+	private Map<String,Object> saveCer(Resume resume,String id) throws Exception{
+		
+		List<Certificate> cers = resume.getCertificate();
+		
+		Map<String,Object> resultMap = new HashMap<String,Object>();
+		
+		List<SendCertificate> sendcers = new ArrayList<SendCertificate>();
+		List<Map<String,Object>> cresMap = new ArrayList<Map<String,Object>>();
+		SimpleDateFormat format = new SimpleDateFormat("yyyy/MM");
+		for (Certificate cer : cers) {
+			
+			String name = cer.getName();
+			Date time = cer.getTime();
+			
+			SendCertificate send = new SendCertificate();
+			
+			send.setCertificateTime(format.format(time));
+			send.setName(name);
+			sendcers.add(send);
+			Map<String,Object>  param = new HashMap<String, Object>();
+			param.put("id", seqNoDAO.getFlwNo("PS","C"));
+			param.put("memberId", "");
+			param.put("certificateTime",time);
+			param.put("name",name);
+			param.put("saveFlag", "local");//保存本地数据库
+			param.put("remark", "");
+			cresMap.add(param);
+			
+		}
+		
+		resultMap.put(StatusCode.JSON_CERT, sendcers);
+		resultMap.put("cert_map", cresMap);
+		
+		return resultMap;
+	}
+	
+	
+	
+	
+	
+	private Map<String,Object> saveTran(Resume resume,String id) throws Exception{
+		List<TrainExperience> trains = resume.getTrainExperience();
+		Map<String,Object> resultMap = new HashMap<String,Object>();
+		List<SendTrain> sendTrans = new ArrayList<SendTrain>(); 
+		SimpleDateFormat format = new SimpleDateFormat("yyyy/MM");
+		List<Map<String,Object>> tranisMap = new ArrayList<Map<String,Object>>();
+		for (TrainExperience train : trains) {
+			 
+			SendTrain send = new SendTrain();
+			
+			 String tranName = train.getTranName();
+			 String institution = train.getInstitutions();
+			 String address =  train.getAddress();
+			 Date start = train.getStartTime();
+			 Date end = train.getEndTime();
+			 
+			 send.setCompanName(institution);
+			 send.setTrainingName(tranName);
+			 send.setTrainingDescription("");
+			 send.setStartTime(format.format(start));
+			 send.setEndTime(format.format(end));
+			 sendTrans.add(send);
+			 Map<String,Object> param = new HashMap<String,Object>();
+			 param.put("id", id);
+		     param.put("memberId", "");
+			 param.put("startTime", start);
+			 param.put("endTime", end);
+			 param.put("companyName", institution);
+			 param.put("trainingDescription", "");
+			 param.put("trainingName", tranName);
+			 param.put("saveFlag", "local");//保存本地数据库
+			 param.put("remark", "");
+			 param.put("id", seqNoDAO.getFlwNo("PS","T"));
+			 tranisMap.add(param);
+			 
+		}
+		
+		resultMap.put(StatusCode.JSON_TRAIN, sendTrans);
+		resultMap.put("train_map", sendTrans);
+		return resultMap;
+	}
+	
+	
+	private Map<String,Object> saveInfo(Resume resume,String id) throws Exception{
+		Map<String,Object> resultMap = new HashMap<String,Object>();
+		SendPersonInfo info = new SendPersonInfo();
+		SimpleDateFormat format = new SimpleDateFormat("yyyy/MM");
+		info.setName(resume.getName());
+		info.setBornDate(format.format(resume.getBirthday()));
+		info.setGender(resume.getSex());
+		info.setHighestEducation(resume.getHighestEducation());
+		info.setIdentityNum(id);
+		info.setOrigin(resume.getOrigin());
+		Map<String,Object> paramMap = new HashMap<String, Object>();
+		paramMap.put("id", seqNoDAO.getFlwNo("PS","I"));
+		paramMap.put("name", resume.getName());
+		//paramMap.put("identityNum", identityNum);
+		paramMap.put("origin", resume.getOrigin());
+		paramMap.put("highestEducation", resume.getHighestEducation());
+		paramMap.put("political", "");
+		paramMap.put("nation", "");
+		paramMap.put("residence", "");
+		paramMap.put("marry", "");
+		paramMap.put("gender", resume.getSex());
+		paramMap.put("bornYear",resume.getBirthday());
+		paramMap.put("workYear", "");
+		paramMap.put("address", "");
+		paramMap.put("email", resume.getEmail());
+		paramMap.put("telPhone", resume.getTel());
+		paramMap.put("memberId", "");
+		paramMap.put("saveFlag", "local");//保存本地数据库
+		paramMap.put("idNum", id);
+		paramMap.put("income", "");
+		resultMap.put(StatusCode.JSON_INFO, info);
+		resultMap.put("info_base", paramMap);
+		Map<String,Object> dataMap = new HashMap<String,Object>();
+		dataMap.put("id", id);
+		Map<String,Object> rMap = companyAdminDao.queryMermberIDBy(dataMap);
+		if(rMap==null){
+			companyAdminDao.savePersonInfo(paramMap);
+		}
+		return resultMap;
+	}
+	
+
+}

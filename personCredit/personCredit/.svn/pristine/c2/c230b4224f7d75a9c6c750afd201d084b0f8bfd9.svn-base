@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" ?>    
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.csmf.dao.PersonAllSkillDao">
+	<insert id="savePersonSkills" parameterType="java.util.HashMap">
+		INSERT into t_person_all_skill (id,member_id,skill_type,skill_num,update_time,create_time,remark,save_flag) 
+		<trim prefix="values (" suffix=")" suffixOverrides="," >      
+          <if test="id != null" >#{id},</if>      
+         <if test="memberId != null" >#{memberId},</if>
+         <if test="skillType != null" >#{skillType},</if>
+         <if test="skillNum != null" >#{skillNum},</if>
+         <if test="updateTime != null" >#{updateTime},</if>
+         <if test="createTime != null" >#{createTime},</if>
+         <if test="remark != null" >#{remark},</if>
+         <if test="saveFlag != null" >#{saveFlag},</if>
+        </trim>
+	</insert>
+	<update id="updatePersonSkillById" parameterType="java.util.HashMap">
+		update t_person_all_skill set 
+		skill_type=#{skillType},skill_num=#{skillNum},update_time=#{updateTime},proficiency=#{proficiency},save_flag=#{save_flag}
+		from t_person_all_skill
+		where member_id=#{memberId} and id=#{id}
+	</update>
+	<select id="querySkillById" parameterType="java.lang.String" resultType="java.util.HashMap">
+		select id,
+        	skill_type as skillType,
+        	skill_num as skillNum,
+        	proficiency,
+        	save_flag as saveFlag
+        from t_person_all_skill where member_id=#{memberId} 	
+	</select>
+</mapper>

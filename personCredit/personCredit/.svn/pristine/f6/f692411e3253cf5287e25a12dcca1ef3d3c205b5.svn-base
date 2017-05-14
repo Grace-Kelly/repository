@@ -1,0 +1,224 @@
+package com.csmf.service.impl;
+
+import java.io.InputStream;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.csmf.common.StatusCode;
+import com.csmf.dao.AdminDao;
+import com.csmf.dao.CompanyAdminDao;
+import com.csmf.dao.ISeqNoDAO;
+
+import com.csmf.dto.Resume;
+import com.csmf.dto.SerialNumberConfigDto;
+import com.csmf.dto.send.SendAllSkills;
+import com.csmf.dto.send.SendCertificate;
+import com.csmf.dto.send.SendEducation;
+import com.csmf.dto.send.SendKill;
+import com.csmf.dto.send.SendPersonInfo;
+import com.csmf.dto.send.SendProject;
+import com.csmf.dto.send.SendTrain;
+import com.csmf.dto.send.SendWork;
+import com.csmf.resume.ResumeBase;
+import com.csmf.resume.ResumePasreFactory;
+import com.csmf.resume.auth.AnalysisiFactory;
+import com.csmf.resume.auth.ResumeAnalysis;
+import com.csmf.service.CompanyAdminService;
+import com.csmf.service.FabricService;
+import com.csmf.util.Base64;
+
+import com.csmf.util.SerialNumberType;
+
+import net.sf.json.JSONObject;
+
+
+
+
+@Service("companyAdminService")
+public class CompanyAdminServiceImpl implements CompanyAdminService {
+	
+	private Log log = LogFactory.getLog(this.getClass());
+	
+	@Resource
+	private CompanyAdminDao companyAdminDao;
+	@Resource
+	ISeqNoDAO seqNoDAO;
+	@Resource
+	ResumePasreFactory resumePasreFactory;
+	@Resource
+	AnalysisiFactory analysisiFactory;
+	@Resource
+	FabricService fabricService;
+	@Resource
+	AdminDao adminDao;
+	
+	
+	
+	public Boolean queryComPanyIsExit(Map<String,Object> param){
+		boolean flag =false;
+		
+		if(param!=null){
+			Map<String,Object> resultMap=companyAdminDao.queryCompanyAdmin(param);		
+			if(resultMap!=null && !resultMap.isEmpty()){
+				flag = true;
+			}
+		}
+		return flag;
+	}
+	
+	
+	
+	
+	public Map<String,Object> registerCompanyAdmin(Map<String,Object> parmams){
+		Map<String,Object> result = new HashMap<String,Object>();
+		//获取密码
+		String passwd=(String)parmams.get("passwd");
+		//获取用户名
+		String personNo=(String)parmams.get("personNo");
+		//企业执照名称
+		String companyNo = (String) parmams.get("companyNo");
+		result.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+		if (queryComPanyIsExit(parmams)){
+			result.put("msg", "企业账号已经注册");
+			
+			return result;
+		}
+		parmams.put("passwd", Base64.encode(passwd.getBytes()));
+		
+		String eqNo;
+		try {
+			eqNo = seqNoDAO.getFlwNo("accountNo","COM");
+			parmams.put("companyId", eqNo);
+		} catch (Exception e1) {
+			result.put("msg", "保存失败");
+			log.error("保存用户失败", e1);
+		}	
+		
+		try {
+			companyAdminDao.saveCompanyAdmin(parmams);
+			result.put("msg", "注册成功");
+			result.put(StatusCode.STATUS, StatusCode.STATUS_OK);
+		} catch (Exception e) {
+			result.put("msg", "保存失败");
+			log.error("保存用户失败", e);
+		}
+		return result;
+	}
+
+
+	public Map<String, Object> loginCompany(Map<String,Object> param) {
+		
+		Map<String,Object> resultMap = new HashMap<String,Object>();
+		
+		String password = (String) (param.get("passwd")!=null?param.get("passwd"):"");		
+		//查询登陆信息
+		try {
+			
+			if (!queryComPanyIsExit(param)){
+				resultMap.put(StatusCode.MSG, "用户名不存在");
+				resultMap.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+				return resultMap;
+			}
+			
+			
+			Map<String,Object> dataMap=companyAdminDao.queryCompanyAdmin(param);
+			
+			String passwd=(String) (dataMap.get("passwd")!=null?dataMap.get("passwd"):"");
+		   	String psd = new String(Base64.decode(passwd));
+			if(psd.equals(password) && password!=null && !"".equals(password)){
+				resultMap.put("companyNo", dataMap.get("companyNo"));
+				resultMap.put(StatusCode.MSG, "登陆成功");
+				resultMap.put("personNo", dataMap.get("personNo"));
+				resultMap.put("status_auth", dataMap.get("status_auth"));
+				resultMap.put(StatusCode.STATUS, StatusCode.STATUS_OK);
+			}else{
+				resultMap.put(StatusCode.MSG, "密码不正确");
+				resultMap.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+				return resultMap;
+			}
+			
+		} catch (Exception e) {
+			resultMap.put(StatusCode.MSG, " 系统异常");
+			log.error("登陆异常",e);
+		}
+		return resultMap;
+	}
+
+	public List<Map<String, Object>> resumeAnalysis(InputStream in,String type,String id,String login) {
+		Map<String,String> resumeType = StatusCode.RESUMETYPE;
+		List<String> list = StatusCode.RESUMEANALYSIS;
+		List<Map<String,Object>> resultList = new ArrayList<Map<String,Object>>();
+		try {
+			
+			for(Map.Entry<String, String> entry:resumeType.entrySet()){
+				  if(entry.getKey().equals(type)){
+					  ResumeBase pasreResume =resumePasreFactory.createResumePasre(entry.getValue());
+					  if(pasreResume!=null){
+						 Resume resume = pasreResume.parseDoc(in);
+						 String name = resume.getName();
+						 String tel = resume.getTel();
+						 Map<String,Object> param = new HashMap<String,Object>();
+						 //根据信息查询匹配简历
+						 String idNum = "";
+						 if (!"".equals(id) && id!=null ){
+							 param.put("id", id);
+							 idNum = id;
+						 }else{
+							 param.put("name", name);
+							 param.put("tel", tel);
+						 }
+						Map<String,Object> rMap = companyAdminDao.queryMermberIDBy(param);
+						
+						if(rMap!=null){
+							idNum = (String) rMap.get("idNum");
+						}else{
+							return resultList;
+						}
+																								
+						Map<String,Object> datail = fabricService.queryFabricResume(idNum,login);
+						
+						 for (String string : list) {
+							 ResumeAnalysis analysis = analysisiFactory.newInstince(string);
+							 if(datail!=null && !datail.isEmpty()){
+								 Map<String,Object> data = analysis.analysis(resume, datail);
+								 if(data!=null){
+									 resultList.add(data);
+								 }
+							 }
+						}
+					  }else{
+						  log.info("简历解析模版不存在:type="+type);
+					  }
+				  }
+			}
+		} catch (Exception e) {
+			log.error("解析简历异常，简历模版为"+type, e);
+		}
+		return resultList;
+	}
+
+
+
+	@Transactional(propagation = Propagation.REQUIRED, timeout = 20, rollbackFor = Exception.class)
+	public void saveCompanyInfo(Map<String, Object> param) throws Exception {
+		adminDao.insertCompanyInfo(param);
+		companyAdminDao.updateCompanylogin(param);
+	}
+	
+
+
+}

@@ -1,0 +1,5 @@
+/home/pactera/workspace/personCredit/src/main/java/com/csmf/service/IUserService.java
+/home/pactera/workspace/personCredit/src/main/java/com/csmf/controller/UserController.java
+/home/pactera/workspace/personCredit/src/main/java/com/csmf/dao/IUserDao.java
+/home/pactera/workspace/personCredit/src/main/java/com/csmf/service/UserServiceImpl.java
+/home/pactera/workspace/personCredit/src/main/java/com/csmf/dto/User.java

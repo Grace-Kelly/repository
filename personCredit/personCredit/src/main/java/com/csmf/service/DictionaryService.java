@@ -1,0 +1,17 @@
+package com.csmf.service;
+
+import java.util.Map;
+
+public interface DictionaryService {
+
+	Map selectDictionaryInfo(Map param) throws Exception;
+	
+	Map selectDictionaryInfoTo2(Map param) throws Exception;
+	
+	Map selectProvinceAndCityInfo() throws Exception;
+
+	Map selectSkillInfo(Map param) throws Exception;
+	
+	Map selectSkillInfoByNameOrId(Map param) throws Exception;
+
+}

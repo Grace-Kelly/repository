@@ -1,0 +1,301 @@
+/*                     --start-base-css--               */
+* {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	font-size: 100%;
+	font:inherit;
+	vertical-align: baseline;
+}
+@font-face {
+  font-family: 'iconfont';  /* project id 238247 */
+  src: url('//at.alicdn.com/t/font_sevewamkg0dg3nmi.eot');
+  src: url('//at.alicdn.com/t/font_sevewamkg0dg3nmi.eot?#iefix') format('embedded-opentype'),
+  url('//at.alicdn.com/t/font_sevewamkg0dg3nmi.woff') format('woff'),
+  url('//at.alicdn.com/t/font_sevewamkg0dg3nmi.ttf') format('truetype'),
+  url('//at.alicdn.com/t/font_sevewamkg0dg3nmi.svg#iconfont') format('svg');
+}
+
+/*                     --end-base-css--               */
+
+
+/*                     --start-ux-header--               */
+body{
+  background-color: #fff;
+}
+
+header {
+    position: fixed;
+    width: 100%;
+    top:0;
+    left:0;
+    height: 60px;
+    background: #000;
+}
+.ux-tabSwitchParent{
+    height: 60px;
+    width: 240px;
+   display: inline-block;
+   white-space: nowrap;
+ 
+}
+header #uxTabSwitch>div{
+     height: 60px;
+     line-height: 60px;
+     font-size: 14px;
+     background-color:#000;
+     display: inline-block;
+     cursor: pointer;
+}
+#uxTabSwitch{
+    display: inline-block;
+    font-size: 15px;
+    text-align: center;
+    cursor: pointer;
+    font-size: 0px;
+}
+#uxTabSwitch>div{
+ color: #56595A;
+ width: 80px;    
+}
+
+.ux-zoom-widget{
+    width: 160px;
+    height: 60px;
+    text-align: center;
+    display: inline-block;
+    vertical-align: top;
+}
+.ux-zoom-in{
+    display: inline-block;
+    position: relative;
+    width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    border: 0;
+    background: #3484F5;
+    vertical-align: middle;
+    cursor: pointer;
+}
+.ux-zoom-in:before {
+    position: absolute;
+    top: 9px;
+    left: 5px;
+    content: "";
+    display: block;
+    width: 10px;
+    height: 2px;
+    background: #FFF;
+}
+.ux-zoom-text{
+    display: inline-block;
+    text-align: center;
+    line-height: 60px;
+    vertical-align: middle;
+    height: 60px;
+    color: #fff;
+}
+.ux-zoom-out{
+    display: inline-block;
+    position: relative;
+    width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    border: 0;
+    background: #3484F5;
+    vertical-align: middle;
+    cursor: pointer;
+}
+.ux-zoom-out:before{
+    position: absolute;
+    top: 9px;
+    left: 5px;
+    content: "";
+    display: block;
+    width: 10px;
+    height: 2px;
+    background: #FFF;
+}
+.ux-zoom-out:after {
+   top: 5px;
+    left: 9px;
+    width: 2px;
+    height: 10px;
+    content: "";
+    position: absolute;
+    display: block;
+    background-color: #fff;
+}
+/*                     --end-ux-header--               */
+
+
+/*                     --start-ux-content--               */
+header~.ux-content {
+    padding-top: 44px;
+}
+#iframe{
+    /*text-align: center;
+    margin: auto auto;
+    vertical-align: middle;*/
+    margin-left: 240px;
+    min-width: 2000px;;
+    min-height:2000px;
+overflow: auto;
+
+    /*transform-origin:50% 50%;*/
+}
+/*                     --satar-ux-content--               */
+
+
+/*                     --start-ux-left-sidebar--               */
+.ux-left-sidebar{
+    height: 100%;
+    width: 240px;
+    background-color: #292C2E;
+    position: fixed;
+    left: 0;
+    top: 60px;
+}
+#uxTabSwitch .on{
+    background-color: #292C2E;
+    color: #fff;
+}
+
+.ux-tabSwitchTarget{
+    left: 0;
+    top: 0px;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    color: #56595A;
+}
+.ux-tabSwitchTarget .ux-leftTabtitle{
+    font-size: 12px;
+    width: 100%;
+    color: #fff;
+    height: 65px;
+    text-align: center;
+    line-height: 65px;
+}
+.ux-tabSwitchTarget .ux-leftTabtitle span{
+      font-size: 12px;
+    color: #989A9C;
+    margin-left: 5px;
+    height: 65px;
+    line-height: 65px;
+}
+.ux-tabSwitchTarget .ux-tabbox{
+    width: 100%;
+    height: 100%;
+   overflow: auto;
+}
+.ux-tabSwitchTarget .ux-tabbox li{
+    height: 55px;
+    text-align: left;
+    cursor: pointer;
+    padding-top: 10px;
+    padding-left: 10px;
+}
+.ux-tabSwitchTarget .ux-tabbox .ux-pageimg{
+  display: inline-block;
+  width: 44px;
+  height: 44px;
+}
+.ux-tabSwitchTarget .ux-tabbox .ux-pageinformation{
+  display: inline-block;
+  height: 44px;
+  margin-left: 10px;
+  vertical-align: top;
+}
+.ux-tabSwitchTarget .ux-tabbox .ux-pageinformation p{
+    height: 22px;
+    line-height: 22px;
+    text-align: left;
+    color: #fff;
+    font-size: 12px;
+    vertical-align: top;
+}
+/*                     --end-ux-left-sidebar--               */
+
+
+
+/*                     --start-ux-right-sidebar--               */
+.ux-right-sidebar{
+    height: 100%;
+    width: 240px;
+    background-color: #292C2E;
+    position: fixed;
+    right: 0;
+    top: 60px;
+}
+.ux-right-sidebar .ux-tabSwitchTarget{
+    height: 100%;
+    width: 240px;
+    overflow: auto;
+}
+
+.ux-right-sidebar .ux-tabSwitchTarget .ux-tabbox{
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    padding: 10px;
+}
+.ux-right-sidebar .ux-tabSwitchTarget .ux-tabbox li{
+    height: 38px;
+    text-align: left;
+    cursor: pointer;
+   
+}
+.ux-right-sidebar .ux-tabSwitchTarget .ux-tabbox .ux-attribute{
+  display: inline-block;
+  width: 72px;
+  height: 24px;
+  line-height: 24px;
+  text-align: center;
+}
+.ux-right-sidebar .ux-tabSwitchTarget .ux-tabbox .ux-pageinformation{
+    height:38;
+    display: inline-block;
+    line-height: 38px;
+    vertical-align: top;
+    width:65px;
+    text-align: left;
+    margin-left: 0;
+}
+.ux-right-sidebar .ux-tabSwitchTarget .ux-tabbox .ux-pageinformation .ux-ifmrow1{
+    height: 24px;
+    display: inline-block;
+    line-height: 24px;
+    width: 130px;
+    text-align: left;
+    color: #fff;
+    font-size: 12px;
+    vertical-align: top;
+}
+.ux-right-sidebar .ux-tabSwitchTarget .ux-tabbox .ux-pageinformation .ux-ifmrow1 input{
+    width:61px;
+    height: 24px;
+    margin-left: 4px;
+}
+
+.ux-right-sidebar .ux-tabSwitchTarget .ux-tabbox .ux-pageinformation .ux-ifmrow2{
+    height: 14px;
+    display: inline-block;
+    line-height: 14px;
+    width: 130px;
+    text-align: left;
+    color: #fff;
+    font-size: 12px;
+    vertical-align: top;
+    font-size: 0px;
+}
+.ux-right-sidebar .ux-tabSwitchTarget .ux-tabbox .ux-pageinformation .ux-ifmrow2 span{
+    width:61px;
+    display: inline-block;
+    height: 14px;
+    line-height: 14px;
+    vertical-align: top;
+    color: #fff;
+    margin-left: 4px;
+}
+/*                     --end-ux-right-sidebar--               */

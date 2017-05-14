@@ -1,0 +1,13 @@
+package com.csmf.service;
+
+import java.util.List;
+import java.util.Map;
+
+public interface PersonCertService {
+	
+	void saveCertInfo(Map<String,Object> param) throws Exception;
+	
+	void updateCertInfoById(Map<String,Object> param) throws Exception;
+	
+	List queryCertInfoById(String memberId) throws Exception;
+}

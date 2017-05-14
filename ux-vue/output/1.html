@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- 上述3个meta标签*必须*放在最前面，任何其他内容都*必须*跟随其后！ -->
+  <title>upload file demo</title>
+
+</head>
+
+<body>
+<div>
+  <!-- 使用form事件上传 -->
+  <form id="selectBtnForm">
+    <input type="file" class="upload" name="fileInput" onchange="fileChanged1(event)" id="fileInput">
+  </form>
+  <br>
+  <button type="button" name="button" onclick="doUpload()">开始上传</button>
+  <br><br>
+</div>
+<div>
+  <!-- 直接使用form上传 -->
+  <form id="test2" enctype="multipart/form-data" method="post">
+    <input type="file" accept="image/*" name="files[]" onchange="fileChanged2(event)" multiple placeholder="单选">
+    <input type="text" name="url" placeholder="url">
+    <input type="text" name="type" placeholder="type">
+    <!-- <input type="submit" value="Form提交"> -->
+  </form>
+</div>
+
+
+<script>
+  //使用form事件提交(兼容IE10+)
+  var fileName, imgSrc;
+  var fileChanged1 = function(event) {
+    var files = event.target.files;
+    console.log(files);
+    if (files[0]) {
+      var extStart = files[0].name.lastIndexOf(".");
+      var ext = files[0].name.substring(extStart, files[0].name.length).toUpperCase();
+      if (ext != ".JPG" && ext != ".JPEG" && ext != ".PNG") {
+        alert("仅限上传图片(jpg , jpeg , png)格式！");
+        return;
+      };
+      if (files[0].size > 5 * 1024 * 1024) {
+        alert("上传照片大小不能超过5M！");
+        return;
+      };
+      var fileName = files[0].name;
+      var fileReader = new FileReader();
+      fileReader.readAsDataURL(files[0]);
+      document.getElementById("fileInput").setAttribute("type", "text");
+      //document.getElementById("selectBtnForm")[0].reset();
+      fileReader.onload = function(e) {
+        imgSrc = this.result;
+        // console.log(imgSrc);
+        doUpload(imgSrc);
+        document.getElementById("fileInput").setAttribute("type", "file");
+      };
+    }
+  };
+
+  function doUpload(result) {
+    var upBase = dataURItoBlob(result);
+    //fd为上传的内容
+    var fd = new FormData();
+    fd.append("files[]", upBase, 'fileInput');
+    fd.append("type", "13");
+    console.log(fd);
+  };
+
+  function dataURItoBlob(dataURI) {
+    // convert base64/URLEncoded data component to raw binary data held in a string
+    var byteString;
+    if (dataURI.split(',')[0].indexOf('base64') >= 0)
+      byteString = atob(dataURI.split(',')[1]);
+    else
+      byteString = unescape(dataURI.split(',')[1]);
+
+    // separate out the mime component
+    var mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
+
+    // write the bytes of the string to a typed array
+    var ia = new Uint8Array(byteString.length);
+    for (var i = 0; i < byteString.length; i++) {
+      ia[i] = byteString.charCodeAt(i);
+    }
+    return new Blob([ia], {
+      type: mimeString
+    });
+  }
+</script>
+
+<script>
+  //直接使用form提交
+  // 使用form上传成功后，可使用重定向拿到上传状态（即成功还是失败），不同的跳转路径参数
+  // var setAction = "上传文件的接口";
+  var fileChanged2 = function(event){
+    // 在此处对文件进行操作，符合上传标准，则执行form表单的submit事件
+    document.getElementById("test2").setAttribute("action",setAction);
+    document.getElementById("test2").submit();
+  }
+</script>
+</body>
+
+</html>

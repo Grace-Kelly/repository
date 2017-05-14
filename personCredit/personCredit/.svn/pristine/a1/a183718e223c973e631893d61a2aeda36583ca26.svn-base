@@ -1,0 +1,113 @@
+package com.csmf.resume.auth;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.stereotype.Component;
+
+import com.csmf.common.StatusCode;
+import com.csmf.dto.AnalysisResult;
+import com.csmf.dto.Result;
+import com.csmf.dto.Resume;
+import com.csmf.dto.send.SendPersonInfo;
+/**
+ * 个人基本信息对比
+ * @author pact
+ *
+ */
+@Component("baseAnalysis")
+public class BaseAnalysis extends Analysis {
+
+	private Log log = LogFactory.getLog(this.getClass());
+	
+	public Map<String,Object> analysis(Resume resume,Map<String,Object> detail) {
+		
+		SendPersonInfo infos =  (SendPersonInfo) detail.get(StatusCode.JSON_INFO);		
+		Map<String,Object> resultMap = new HashMap<String, Object>();
+		SimpleDateFormat format = new SimpleDateFormat("yyyy/MM");
+		List<AnalysisResult> resultList = new ArrayList<AnalysisResult>();
+		AnalysisResult result = new AnalysisResult();
+		Map<String,Object> info = new HashMap<String,Object>();
+		info.put("name", resume.getName());
+		info.put("sex", resume.getSex());
+		info.put("Birthday",format.format(resume.getBirthday()));
+		info.put("origin", resume.getOrigin());
+		result.setInfo(info);
+		resultList.add(result);		
+		resultMap.put("baseInfo",resultList);
+		if(infos!=null){
+			//姓名
+			String name = infos.getName();
+			Result nameResult =nameAnalysis(name,"name",resume.getName());
+			if(!nameResult.isResult()){				
+					return resultMap;
+			}
+			//性别
+			String gender = infos.getGender();
+			Result sexResult = nameAnalysis(gender,"sex",resume.getSex());
+			if(!sexResult.isResult()){
+				return resultMap;
+			}
+			//出生年月
+			if(infos.getBornDate() !=null){
+				Date date;
+				try {
+					date = format.parse(infos.getBornDate());
+					Result brithResult = timeAnalysis(date,"brithDay",resume.getBirthday());
+					if(!brithResult.isResult()){
+						return resultMap;
+					}
+				} catch (ParseException e) {
+					
+					e.printStackTrace();
+				}			
+			}
+			
+			result.setResult(true);
+			
+//			resultList.add(result);
+//			
+//			resultMap.put("baseInfo",resultList);
+
+		}
+		
+		
+		return resultMap;
+	}
+	
+	
+	private Result timeAnalysis(Date date,String key,Date realName){
+		Result  analys = new Result();
+		SimpleDateFormat format = new SimpleDateFormat("yyyy/MM");
+		String year = format.format(realName);
+		 try {
+			if(date.equals(realName)){//相等
+				analys.setResult(true);
+			}else{
+				analys.setResult(false);
+			}
+		} catch (Exception e) {
+			log.error("日期格式解析异常", e);
+		}
+		 return analys;
+	}
+	
+	private Result nameAnalysis(String name,String key,String realName){
+		
+		Result anals = new Result();
+		anals.setResult(false);	
+		if(name.equals(realName) && !name.isEmpty()){
+			anals.setResult(true);	
+		}
+		
+		return anals;
+	}
+
+}

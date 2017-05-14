@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" ?>    
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.csmf.dao.SecretKeyDAO">
+	
+	
+	<insert id="insertSecretKey" parameterType="java.util.HashMap">
+		INSERT into t_secret_key (secretId,identity_priKey,data_priKey,data_pubkey,memberId,id,create_time,update_time) 
+		VALUES (#{sid},#{passwd},#{prikey},#{pubKey},#{memberId},#{id},SYSDATE(),SYSDATE())
+	</insert>
+	
+	<select id="querySecretKeyById" parameterType="string" resultType="java.util.HashMap">
+	SELECT k.identity_priKey "passwd",k.memberId "memberId",k.data_priKey "priKey",k.data_pubkey "pubKey",k.id "id" 
+	FROM t_secret_key k
+	Where k.id = #{id}	
+	</select>
+	
+	<select id="queryMemberIdById" parameterType="string" resultType="java.util.HashMap">
+	SELECT member_id FROM t_member_info where  identity_num=#{id}	
+	</select>
+	
+	<select id="queryidBymemberId" parameterType="java.util.HashMap" resultType="string">
+	SELECT identity_num FROM t_member_info where  member_id=#{memberId}	
+	</select>
+	
+	<select id="queryCompanyReg" parameterType="java.util.HashMap" resultType="string">
+		SELECT license_num FROM t_company_info  where name = #{name}	
+	</select>
+	
+	<select id="querySecretKeyByMId" parameterType="string" resultType="java.util.HashMap">
+	SELECT k.identity_priKey "passwd",k.memberId "memberId",k.data_priKey "priKey",k.data_pubkey "pubKey",k.id "id" 
+	FROM t_secret_key k
+	Where k.memberId = #{memberId}
+	</select>
+</mapper>

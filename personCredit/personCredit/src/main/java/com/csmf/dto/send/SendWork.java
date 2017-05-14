@@ -1,0 +1,97 @@
+package com.csmf.dto.send;
+
+import java.util.Date;
+
+
+/** 
+ * 项目名称：personCredit
+ * 包名：com.csmf.dto.send 
+ * 文件名称： SendWork.java
+ * 类的描述：简历的工作模块发送给区块链的POJO       
+ * 创建时间：2017年5月2日/下午2:02:21
+ */  
+public class SendWork {
+
+	/**
+	 * 开始工作时间
+	 */
+	private String entryTime;
+	/**
+	 * 离职时间
+	 */
+	private String dimissionTime;
+	/**
+	 * 公司名称
+	 */
+	private String companName;
+	/**
+	 * 职责
+	 */
+	private String position;
+	/**
+	 * 工作描述
+	 */
+	private String workDescription;
+	/**
+	 * 行业
+	 */
+	private String trade;
+	/**
+	 * 部门
+	 */
+	private String department;
+	/**
+	 * 唯一标识
+	 */
+	private String id;
+	
+	public String getEntryTime() {
+		return entryTime;
+	}
+	public void setEntryTime(String entryTime) {
+		this.entryTime = entryTime;
+	}
+	public String getDimissionTime() {
+		return dimissionTime;
+	}
+	public void setDimissionTime(String dimissionTime) {
+		this.dimissionTime = dimissionTime;
+	}
+	public String getCompanName() {
+		return companName;
+	}
+	public void setCompanName(String companName) {
+		this.companName = companName;
+	}
+	public String getPosition() {
+		return position;
+	}
+	public void setPosition(String position) {
+		this.position = position;
+	}
+	public String getWorkDescription() {
+		return workDescription;
+	}
+	public void setWorkDescription(String workDescription) {
+		this.workDescription = workDescription;
+	}
+	public String getTrade() {
+		return trade;
+	}
+	public void setTrade(String trade) {
+		this.trade = trade;
+	}
+	public String getDepartment() {
+		return department;
+	}
+	public void setDepartment(String department) {
+		this.department = department;
+	}
+	public String getId() {
+		return id;
+	}
+	public void setId(String id) {
+		this.id = id;
+	}
+	
+}

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>    
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.csmf.dao.PersonCertDao">
+	<insert id="saveCertInfo" parameterType="java.util.HashMap">
+		INSERT into t_certificate (id,member_id,certificate_time,name,file_id,certificate_type,update_time,create_time,remark) 
+		<trim prefix="values (" suffix=")" suffixOverrides="," >      
+          <if test="id != null" >#{id},</if>      
+         <if test="memberId != null" >#{memberId},</if>
+         <if test="certificateTime != null" >#{certificateTime},</if>
+         <if test="name != null" >#{name},</if>
+         <if test="fileId != null" >#{fileId},</if>
+         <if test="certificateType != null" >#{certificateType},</if>
+         <if test="updateTime != null" >#{updateTime},</if>
+         <if test="createTime != null" >#{createTime},</if>
+         <if test="remark != null" >#{remark},</if>
+         <if test="saveFlag != null" >#{saveFlag},</if>
+        </trim>
+	</insert>
+	<update id="updateCertInfoById" parameterType="java.util.HashMap">
+		update t_certificate set 
+		certificate_time=#{certificateTime},name=#{name},file_id=#{fileId},certificate_type=#{certificateType},
+		update_time=#{updateTime},remark=#{remark},save_flag=#{save_flag}
+		from t_certificate
+		where member_id=#{memberId} and id=#{id}
+	
+	</update>
+	<select id="queryCertInfoById" parameterType="java.lang.String" resultType="java.util.HashMap">
+		select id,
+        	certificate_time as certificateTime,
+        	name as name,
+        	file_id as fileId,
+        	certificate_type as certificateType,
+        	update_time as updateTime,
+        	save_flag as saveFlag
+        from t_certificate where member_id=#{memberId} 	
+	</select>
+</mapper>

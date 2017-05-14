@@ -1,0 +1,51 @@
+package com.csmf.service.impl;
+
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.stereotype.Service;
+
+import com.csmf.dao.PersonTrainDao;
+import com.csmf.service.PersonTrainService;
+
+
+@Service("personTrainService")
+public class PersonTrainServiceImpl implements PersonTrainService {
+
+	private Log log = LogFactory.getLog(this.getClass());
+
+	@Resource
+	private PersonTrainDao personTrainDao;
+
+	public void saveTrainInfo(Map<String, Object> param) throws Exception {
+		try {
+			personTrainDao.saveTrainInfo(param);
+		} catch (Exception e) {
+			log.error("保存培训信息失败:",e);
+		}
+	}
+
+	public void updateTrainById(Map<String, Object> param) throws Exception {
+		try {
+			personTrainDao.updateTrainById(param);
+		} catch (Exception e) {
+			log.error("更新培训信息失败:",e);
+		}
+	}
+
+	public List queryTrainById(String memberId) throws Exception {
+		List resultList = null;
+		try{
+			resultList = personTrainDao.queryTrainById(memberId);
+		}catch (Exception e) {
+			log.error("查询培训信息失败:",e);
+		}
+		return resultList;
+	}
+
+}

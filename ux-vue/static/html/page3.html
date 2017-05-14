@@ -1,0 +1,106 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0//EN" "http://www.w3.org/TR/REC-html40/strict.dtd">
+<html>
+  <head>
+    <title>
+  测试
+    </title>
+    <style type="text/css">
+      html {
+        font: 10px/1 Verdana, sans-serif;
+        background-color: blue;
+        color: white;
+        height: 100%;
+        width: 100%;
+      }
+
+      body {
+        height: 100%;
+        width: 100%;
+        margin: 1.5em;
+        border: .5em solid black;
+        padding: 0;
+        width: 48em;
+        background-color: white;
+      }
+.haha1{
+  width: 100px;
+  height: 100px;
+  position: absolute;
+  left: 0;
+  top: 0;
+  background-color: #FC0;
+}
+.haha2{
+  width: 100px;
+  height: 100px;
+  position: absolute;
+  left: 0;
+  top: 100px;
+  background-color:#854;
+}
+.haha3{
+  width: 100px;
+  height: 100px;
+  position: absolute;
+  left: 0;
+  top: 200px;
+  background-color: #999;
+}
+
+/*                       给元素添加的css样式                       */
+*:hover
+{
+  border: 1px solid yellow;
+}
+.ux-dfborder{
+  border: 1px solid yellow;
+}
+
+
+    </style>
+  </head>
+  <body>
+  <div class="haha1" objectID="3F0FEEB9-65FF-481D-9099-A8BD67106F00">
+  </div>
+<div class="haha2" objectID="2222-65FF-481D-9099-A8BD67106F00"></div>
+<div class="haha3" objectID="333333-65FF-481D-9099-A8BD67106F00">
+
+</div>
+<div class="haha4" objectID="44444-65FF-481D-9099-A8BD67106F00">
+
+</div>
+
+ <!--      需要给新的页面添加的引入-->
+    <script src="http://cdn.bootcss.com/jquery/2.1.3/jquery.js"></script>
+    <script type="text/javascript">
+        // html2canvas(document.body).then(function(canvas) {
+        //     document.body.appendChild(canvas);
+        // });
+ //      需要给新的页面添加的js
+  $('*').on('click',function(){
+    event.stopPropagation();
+    // 点击加边框
+    $("*").removeClass("ux-dfborder");
+    $(this).addClass("ux-dfborder");  
+   //  存储数据
+    sessionStorage.className=$(this)[0].className;
+    sessionStorage.objectID=$(this).attr("objectID");
+// 把获取的属性放倒指定的元素中 getStyle选择父元素节点的方法
+ $(window.parent.$("#styleHeight").val(`${getStyle($(this)[0], null).height}`));
+ $(window.parent.$("#styleWidth").val(`${getStyle($(this)[0], null).width}`));
+ $(window.parent.$("#styleLeft").val(`${getStyle($(this)[0], null).left}`));
+ $(window.parent.$("#styleTop").val(`${getStyle($(this)[0], null).top}`));
+  })
+   function getStyle(ele) {
+      var style = null;
+      if(window.getComputedStyle) {
+          style = window.getComputedStyle(ele, null);
+      }else{  
+          style = ele.currentStyle;
+      }
+     return style;
+ }
+    </script>
+    
+  </body>
+</html>

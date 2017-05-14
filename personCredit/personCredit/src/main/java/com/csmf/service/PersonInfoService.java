@@ -1,0 +1,34 @@
+package com.csmf.service;
+
+import java.util.List;
+import java.util.Map;
+
+import net.sf.json.JSONObject;
+
+public interface PersonInfoService {
+
+	/**   
+	 * 保存简历中的个人基本信息
+	 * @param param    基本信息
+	 * @return void    返回类型  
+	 */ 
+	Map<String,Object> savePersonInfo(Map<String,Object> param) throws Exception;
+	
+	/**   
+	 * 更新简历中的个人基本信息
+	 * @param param    基本信息  
+	 * @return void    返回类型  
+	 */ 
+	Map<String,Object> updatePersonInfoByTel(Map<String,Object> param) throws Exception;
+	
+	/**   
+	 * 查询个人基本信息 
+	 * @param telPhone 查询条件
+	 * @return Map<String,Object>    返回查询结果 
+	 */ 
+	Map<String, Object> queryInfoById(String telPhone) throws Exception;
+
+	Map<String, Object> validateInfo(JSONObject jsonObject) throws Exception;
+	
+	void updateIdentityNum(Map map) throws Exception;
+}

@@ -1,0 +1,136 @@
+package com.csmf.service.impl;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+
+import com.csmf.common.StatusCode;
+import com.csmf.dao.ISeqNoDAO;
+import com.csmf.dao.PersonProjectDao;
+import com.csmf.dao.UserRegisterDao;
+import com.csmf.dto.send.SendProject;
+import com.csmf.dto.send.SendWork;
+import com.csmf.service.FabricService;
+import com.csmf.service.PersonProjectService;
+import com.csmf.util.DateUtil;
+
+import net.sf.json.JSONObject;
+
+@Service("personProjectService")
+public class PersonProjectServiceImpl implements PersonProjectService {
+
+	private Log log = LogFactory.getLog(this.getClass());
+
+	@Resource
+	private PersonProjectDao personProjectDao;
+
+	@Resource
+	private ISeqNoDAO seqNoDAO;
+
+	@Resource
+	private UserRegisterDao userRegisterDao;
+
+	@Resource
+	private FabricService fabricService;
+
+	public Map<String, Object> savePersonProjectInfo(Map param) throws Exception {
+		Map<String, Object> result = new HashMap<String, Object>();
+		if (param != null) {
+			String telPhone = (String) param.get("telPhone");
+			String saveFlag = (String) param.get("saveFlag");
+			param.put("id", seqNoDAO.getFlwNo("PS", "P"));
+			if (!StringUtils.isEmpty(telPhone)) {
+				Map personMap = userRegisterDao.queryPersonInfo(telPhone);
+				String identityNum = (String) personMap.get("identityNum");
+				String sendFlag = (String) personMap.get("sendFlag");
+				if (!StringUtils.isEmpty(saveFlag)) {
+					if ("local".equals(saveFlag)) {
+						personProjectDao.savePersonProjectInfo(param);
+						result.put(StatusCode.STATUS, StatusCode.STATUS_OK);
+						result.put(StatusCode.MSG, "保存成功");
+					}
+					if ("block".equals(saveFlag)) {
+						String json = beanToJson(param);
+						result = fabricService.sendToBlock(sendFlag, identityNum, json);
+						if (StatusCode.STATUS_FAIL.equals((String) result.get(StatusCode.STATUS))) {
+							return result;
+						}
+						personProjectDao.savePersonProjectInfo(param);
+					}
+				} else {
+					result.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+					result.put(StatusCode.MSG, "保存失败,参数出错");
+				}
+			} else {
+				result.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+				result.put(StatusCode.MSG, "信息丢失");
+			}
+		} else {
+			result.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+			result.put(StatusCode.MSG, "参数为空");
+		}
+		return result;
+	}
+
+	public List queryAllProjectById(String memberId) throws Exception {
+		return personProjectDao.queryAllProjectById(memberId);
+
+	}
+
+	public Map<String, Object> updatePersonProjectById(Map<String, Object> param) throws Exception {
+		String saveFlag = (String) param.get("saveFlag");
+		String telPhone = (String) param.get("telPhone");
+		Map<String, Object> resultMap = new HashMap<String, Object>();
+		if (!StringUtils.isEmpty(saveFlag)) {
+			if ("local".equals(saveFlag)) {
+				personProjectDao.updatePersonProjectById(param);// 更新
+				resultMap.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+				resultMap.put(StatusCode.MSG, "保存成功");
+			}
+			if ("block".equals(saveFlag)) {
+				Map<String, Object> personMap = userRegisterDao.queryPersonInfo(telPhone);
+				String sendFlag = (String) personMap.get("sendFlag");
+				String identityNum = (String) personMap.get("identityNum");
+				resultMap = fabricService.sendToBlock(sendFlag, identityNum, beanToJson(param));
+				if (StatusCode.STATUS_FAIL.equals((String) resultMap.get(StatusCode.STATUS))) {
+					return resultMap;
+				}
+				personProjectDao.updatePersonProjectById(param);
+			}
+		} else {
+			resultMap.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+			resultMap.put(StatusCode.MSG, "保存失败,参数出错");
+		}
+		return resultMap;
+	}
+
+	public List querySkillByProId(String id) throws Exception {
+		return null;
+	}
+
+	public String beanToJson(Map<String, Object> param) throws Exception {
+		SendProject sendProject = new SendProject();
+		if (param != null) {
+			sendProject.setCompanyName((String) param.get("companName"));
+			sendProject.setProjectBeginTime(DateUtil.dateToString((Date) param.get("projectBeginTime")));
+			sendProject.setProjectDescription((String)param.get("projectDescription"));
+			sendProject.setProjectEndTime(DateUtil.dateToString((Date) param.get("projectEndTime")));
+			sendProject.setProjectName((String) param.get("projectName"));
+			sendProject.setResponsibility((String) param.get("responsibility"));
+			sendProject.setSkillId(null);
+			sendProject.setWorkId("");
+			JSONObject obj = JSONObject.fromObject(sendProject);
+			return obj.toString();
+		} else {
+			throw new Exception("请求失败，参数为空");
+		}
+	}
+}

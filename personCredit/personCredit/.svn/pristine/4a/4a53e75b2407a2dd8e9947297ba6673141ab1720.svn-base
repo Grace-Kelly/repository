@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>    
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.csmf.dao.PersonProjectDao">
+	
+	
+	<!-- 保存个人项目信息 -->
+    <insert id="savePersonProjectInfo" parameterType="java.util.HashMap">
+        insert into t_person_proj_expe_info(id,member_id,project_begin_time,project_end_time,company_name,project_description,responsibility,create_time,remark,skill_id,work_id,update_time,save_flag)
+        <trim prefix="values (" suffix=")" suffixOverrides="," >      
+          <if test="id != null" >#{id},</if>      
+         <if test="memberId != null" >#{memberId},</if>
+         <if test="projectBeginTime != null" >#{projectBeginTime},</if>
+         <if test="projectEndTime != null" >#{projectEndTime},</if>
+         <if test="companyName != null" >#{companyName},</if>
+         <if test="projectDescription != null" >#{projectDescription},</if>
+         <if test="responsibility != null" >#{responsibility},</if>
+         <if test="createTime != null" >#{createTime},</if>
+         <if test="remark != null" >#{remark},</if>
+         <if test="skillId != null" >#{skillId},</if>
+         <if test="workId != null" >#{workId},</if>
+         <if test="updateTime != null" >#{updateTime},</if>
+         <if test="saveFlag != null" >#{saveFlag},</if> 
+        </trim>
+    </insert>
+	
+	<update id="updatePersonProjectById" parameterType="java.util.HashMap">
+		update t_person_work_expe_info set 
+		project_begin_time=#{projectBeginTime},project_end_time=#{projectEndTime},company_name=#{companyName},project_description=#{projectDescription},
+		responsibility=#{responsibility},skill_id=#{skillId},work_id=#{workID},remark=#{remark},update_time=#{updateTime},
+		save_flag=#{saveFlag}
+		from t_person_proj_expe_info
+		where member_id=#{memberId} and id=#{id}
+	</update>
+	
+	 <!-- 根据用户的memberId查询个人全部工作项目-->
+    <select id="queryAllProjectById" parameterType="java.lang.String" resultType="java.util.HashMap">
+        select id,
+        	project_begin_time as projectBeginTime,
+        	project_end_time as projectEndTime,
+        	company_name as companyName,
+        	project_description as projectDescription,
+        	responsibility as responsibility,
+        	skill_id as skillId,
+        	work_id as workID
+        from t_person_proj_expe_info where member_Id=#{memberId}
+    </select>
+
+	
+</mapper>

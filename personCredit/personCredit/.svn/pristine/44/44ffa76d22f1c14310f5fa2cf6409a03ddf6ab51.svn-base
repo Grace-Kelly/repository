@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>    
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.csmf.dao.PersonTrainDao">
+
+
+	<insert id="saveTrainInfo" parameterType="java.util.HashMap">
+		INSERT into
+		t_person_training_info
+		(id,member_id,start_time,end_time,company_name,training_description,training_name,remark,create_time,update_time,save_flag)
+		<trim prefix="values (" suffix=")" suffixOverrides="," >      
+          <if test="id != null" >#{id},</if>      
+         <if test="memberId != null" >#{memberId},</if>
+         <if test="startTime != null" >#{startTime},</if>
+         <if test="endTime != null" >#{endTime},</if>
+         <if test="companyName != null" >#{companyName},</if>
+         <if test="trainingDescription != null" >#{trainingDescription},</if>
+         <if test="trainingName != null" >#{trainingName},</if>
+         <if test="remark != null" >#{remark},</if>
+         <if test="createTime != null" >#{createTime},</if>
+         <if test="updateTime != null" >#{updateTime},</if>
+         <if test="saveFlag != null" >#{saveFlag},</if>
+        </trim>
+	</insert>
+
+	<update id="updateTrainById" parameterType="java.util.HashMap">
+		update t_person_training_info set 
+		start_time=#{startTime},end_time=#{endTime},company_name=#{companyName},training_description=#{trainingDescription},
+		training_name=#{trainingName},training_name=#{trainingName},save_flag=#{saveFlag},remark=#{remark},update_time=#{updateTime}
+		from t_person_training_info
+		where member_id=#{memberId} and id=#{id}
+	</update>
+
+	<select id="queryTrainById" parameterType="java.lang.String"
+		resultType="java.util.HashMap">
+		SELECT 
+		id,start_time as startTime,
+		end_time as endTime,
+		company_name as companyName,
+		training_description as trainingDescription,
+		training_name as trainingName,
+		save_flag as saveFlag
+		from t_person_training_info
+		where member_id = #{memberId}
+	</select>
+
+
+</mapper>

@@ -1,0 +1,24 @@
+package com.csmf.service.impl;
+
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.csmf.dao.SecretKeyDAO;
+import com.csmf.service.SecretKeyService;
+@Service("secretKeyService")
+public class SecretKeyServiceImpl implements SecretKeyService {
+
+	@Resource
+	SecretKeyDAO secretKeyDAO;
+	
+	@Transactional(propagation = Propagation.REQUIRED, timeout = 20, rollbackFor = Exception.class)
+	public void updateSecretKey(Map param) throws Exception {
+		secretKeyDAO.updatePriKeyandPubKey(param);
+	}
+
+}

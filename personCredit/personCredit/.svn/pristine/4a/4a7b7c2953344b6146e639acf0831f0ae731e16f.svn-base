@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>    
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.csmf.dao.PersonEducationDao">
+
+
+
+	<!-- 保存个人教育信息 -->
+    <insert id="savePersonEducationInfo" parameterType="java.util.HashMap">
+        insert into t_person_edu_info(id,member_id,admission_time,graduation_time,school_name,education_background,credentials,major,create_time,remark,status,file_id,update_time,save_flag) values(
+          <if test="id != null" >#{id},</if>
+          <if test="objId != null" >#{memberId},</if>
+          <if test="admissionTime != null" >#{admissionTime},</if>
+          <if test="graduationTime != null" >#{graduationTime},</if>
+          <if test="schoolName != null" >#{schoolName},</if>
+          <if test="educationBackground != null" >#{educationBackground},</if>
+          <if test="credentials != null" >#{credentials},</if>
+          <if test="major != null" >#{major},</if>
+          <if test="createTime != null" >#{createTime},</if>
+          <if test="remark != null" >#{remark},</if>
+          <if test="status != null" >#{status},</if>
+          <if test="fileId != null" >#{fileId}</if>
+          <if test="updateTime != null" >#{updateTime},</if>
+          <if test="saveFlag != null" >#{saveFlag}</if>
+        )
+    </insert>
+    
+    <update id="updateEducationInfoById" parameterType="java.util.HashMap">
+		update t_person_edu_info set 
+		admission_time=#{admissionTime},graduation_time=#{graduationTime},school_name=#{schoolName},education_background=#{educationBackground},
+		credentials=#{credentials},major=#{major},remark=#{remark},update_time=#{updateTime},save_flag=#{saveFlag},status=#{status},file_id=#{fileId}
+		from t_person_edu_info
+		where member_id=#{memberId} and id=#{id}
+	</update>
+	
+	 <!-- 根据用户的memberId查询个人全部教育-->
+    <select id="queryAllEducationById" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+       	SELECT 
+		id,admission_time as admissionTime,
+		graduation_time as graduationTime,
+		school_name as schoolName,
+		education_background as educationBackground,
+		credentials,major,status,file_id as fileId,save_flag as saveFlag
+        from t_person_edu_info where member_id=#{memberId}
+    </select>
+	
+	
+</mapper>

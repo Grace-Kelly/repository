@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8" ?>    
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.csmf.dao.PersonWorkDao">
+	
+	<!-- 保存个人工作信息 -->
+    <insert id="savePersonWorkInfo" parameterType="java.util.Map">
+        insert into t_person_work_expe_info(id,member_id,entry_time,dimission_time,company_name,position,work_description,trade,department,create_time,update_time,remark,save_flag)
+        <trim prefix="values (" suffix=")" suffixOverrides="," >      
+          <if test="id != null" >#{id},</if>      
+         <if test="memberId != null" >#{memberId},</if>
+         <if test="entryTime != null" >#{entryTime},</if>
+         <if test="dimissionTime != null" >#{dimissionTime},</if>
+         <if test="companyName != null" >#{companyName},</if>
+         <if test="position != null" >#{position},</if>
+         <if test="workDescription != null" >#{workDescription},</if>
+         <if test="trade != null" >#{trade},</if>
+         <if test="department != null" >#{department},</if>
+         <if test="createTime != null" >#{createTime},</if>
+         <if test="updateTime != null" >#{updateTime},</if>
+         <if test="remark != null" >#{remark},</if>
+         <if test="saveFlag != null" >#{saveFlag},</if>
+        </trim>
+    </insert>
+    <insert id="saveWorkExs" parameterType="java.util.Map">
+    	
+    	insert 
+    	into t_person_work_expe_info
+    	(id,member_id,entry_time,dimission_time,company_name,position,work_description,trade,department,create_time,update_time,remark,save_flag) 
+    	values
+    	<foreach collection="works" item="work" open="(" separator="," close=")">
+    		#{id},#{memberId},#{entryTime},#{dimissionTime},#{companyName},#{position},#{workDescription},#{trade},#{department},SYSDATE(),SYSDATE(),#{remark},#{saveFlag} 
+    	</foreach>
+    	
+    </insert>
+    
+    <update id="updateWorkInfoById" parameterType="java.util.HashMap">
+		update t_person_work_expe_info set 
+		entry_time=#{entryTime},dimission_time=#{dimissionTime},company_name=#{companyName},position=#{position},
+		work_description=#{workDescription},trade=#{trade},department=#{department},remark=#{remark},update_time=#{updateTime},
+		save_flag=#{saveFlag}
+		from t_person_work_expe_info
+		where member_id=#{memberId} and id=#{id}
+	</update>
+    
+    <!-- 根据用户的memberId查询所在过的所有公司 -->
+    <select id="queryCompanyById" parameterType="java.lang.String" resultType="java.util.HashMap">
+        select company_name as CompanyName,id from  t_person_work_expe_info where member_id=#{memberId}
+    </select>
+    
+    <!-- 根据用户的memberId查询个人工作-->
+    <select id="queryAllWorkById" parameterType="java.lang.String" resultType="java.util.HashMap">
+        select id,
+        	entry_time as entryTime,
+        	dimission_time as dimissionTime,
+        	company_name as companyName,
+        	position as position,
+        	work_description as workDescription,
+        	trade as trade,
+        	department as department,
+        	save_flag as saveFlag
+        from t_person_work_expe_info where member_id=#{memberId}
+    </select>
+    
+</mapper>

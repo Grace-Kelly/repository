@@ -1,0 +1,602 @@
+package com.csmf.service.impl;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+import javax.annotation.Resource;
+
+import javax.json.JsonObject;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.poi.ddf.EscherColorRef.SysIndexSource;
+import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
+
+import com.csmf.common.StatusCode;
+import com.csmf.dao.ISeqNoDAO;
+import com.csmf.dao.SecretKeyDAO;
+import com.csmf.dto.SerialNumberConfigDto;
+import com.csmf.dto.send.SendAllSkills;
+import com.csmf.dto.send.SendCertificate;
+import com.csmf.dto.send.SendEducation;
+import com.csmf.dto.send.SendKill;
+import com.csmf.dto.send.SendPersonInfo;
+import com.csmf.dto.send.SendProject;
+import com.csmf.dto.send.SendTrain;
+import com.csmf.dto.send.SendWork;
+
+import com.csmf.service.FabricService;
+import com.csmf.service.PersonAllSkillService;
+import com.csmf.service.PersonCertService;
+import com.csmf.service.PersonEducationService;
+import com.csmf.service.PersonInfoService;
+import com.csmf.service.PersonProjectService;
+import com.csmf.service.PersonTrainService;
+import com.csmf.service.PersonWorkService;
+import com.csmf.service.UserRegisterService;
+import com.csmf.util.Base64;
+import com.csmf.util.RSA;
+import com.csmf.util.SerialNumberType;
+import com.fabric.java.core.sdk.FabricClient;
+
+import net.sf.json.JSONArray;
+import net.sf.json.JSONObject;
+
+@Component("fabricService")
+public class FabricServiceImpl implements FabricService {
+
+	@Resource
+	SecretKeyDAO secretKeyDAO;
+	@Resource
+	ISeqNoDAO seqNoDAO;
+
+	@Resource
+	private UserRegisterService registerService;
+	@Resource
+	private PersonInfoService personInfoService;
+
+	@Resource
+	private PersonEducationService personEducationService;
+
+	@Resource
+	private PersonWorkService personWorkService;
+
+	@Resource
+	private PersonProjectService personProjectService;
+
+	@Resource
+	private PersonTrainService personTrainService;
+
+	@Resource
+	private PersonAllSkillService personAllSkillService;
+
+	@Resource
+	private PersonCertService personCertService;
+
+	private Log log = LogFactory.getLog(this.getClass());
+
+	/**
+	 * 解析区块链Json数据为Map对象
+	 * 
+	 * @param @param
+	 *            result
+	 * @param @return
+	 *            设定文件
+	 * @return Map 返回类型
+	 */
+	public Map<String, Object> BlockChainToMap(String param) {
+		Map<String, Object> resultMap = new HashMap<String, Object>();
+		List<SendWork> works = new ArrayList<SendWork>();
+		List<SendEducation> educations = new ArrayList<SendEducation>();
+		List<SendProject> projects = new ArrayList<SendProject>();
+		List<SendTrain> trains = new ArrayList<SendTrain>();
+		List<SendCertificate> certs = new ArrayList<SendCertificate>();
+		List<SendAllSkills> skills = new ArrayList<SendAllSkills>();
+		StringBuffer buffer = new StringBuffer();
+		if (param != null && !param.equals("")) {
+			// 从区块链获取的数据格式为"{},{},{},{}",需要在头尾加上数组格式"[{},{},{},{}]"
+			buffer.append("[").append(param).append("]");
+			try {
+				JSONArray jsonArr = JSONArray.fromObject(buffer.toString());
+				for (int i = 0; i < jsonArr.size(); i++) {
+					Map<String, Object> map = (Map) jsonArr.getJSONObject(i);
+					Set keySet = map.keySet();
+					Iterator iterator = keySet.iterator();
+					for (; iterator.hasNext();) {
+						String key = (String) iterator.next();
+						if (StatusCode.JSON_INFO.equals(key)) {
+							JSONObject obj = JSONObject.fromObject((Map) map.get(StatusCode.JSON_INFO));
+							SendPersonInfo sendPersonInfo = (SendPersonInfo) JSONObject.toBean(obj,
+									SendPersonInfo.class);
+							resultMap.put(StatusCode.JSON_INFO, sendPersonInfo);
+						}
+						if (StatusCode.JSON_EDUCATION.equals(key)) {
+							List<SendEducation> list = (List<SendEducation>) map.get(StatusCode.JSON_EDUCATION);
+							jsonArrayToObject(list, SendEducation.class, educations);
+						}
+						if (StatusCode.JSON_WORK_EXPE.equals(key)) {
+							List<SendWork> list = (List<SendWork>) map.get(StatusCode.JSON_WORK_EXPE);
+							jsonArrayToObject(list, SendWork.class, works);
+						}
+						if (StatusCode.JSON_PROJECT_EXPE.equals(key)) {
+							List<SendProject> list = (List<SendProject>) map.get(StatusCode.JSON_PROJECT_EXPE);
+							jsonArrayToObject(list, SendProject.class, projects);
+						}
+						if (StatusCode.JSON_TRAIN.equals(key)) {
+							List<SendTrain> list = (List<SendTrain>) map.get(StatusCode.JSON_TRAIN);
+							jsonArrayToObject(list, SendTrain.class, trains);
+						}
+						if (StatusCode.JSON_CERT.equals(key)) {
+							List<SendCertificate> list = (List<SendCertificate>) map.get(StatusCode.JSON_CERT);
+							jsonArrayToObject(list, SendCertificate.class, certs);
+						}
+						if (StatusCode.JSON_ALL_SKILL.equals(key)) {
+							List<SendAllSkills> list = (List<SendAllSkills>) map.get(StatusCode.JSON_ALL_SKILL);
+							jsonArrayToObject(list, SendAllSkills.class, skills);
+						}
+					}
+				}
+				resultMap.put(StatusCode.JSON_EDUCATION, educations);
+				resultMap.put(StatusCode.JSON_WORK_EXPE, works);
+				resultMap.put(StatusCode.JSON_PROJECT_EXPE, projects);
+				resultMap.put(StatusCode.JSON_CERT, certs);
+				resultMap.put(StatusCode.JSON_TRAIN, trains);
+				resultMap.put(StatusCode.JSON_ALL_SKILL, skills);
+				return resultMap;
+			} catch (Exception e) {
+				log.error("字符串解析数组失败\n");
+				e.printStackTrace();
+			}
+		}
+		return null;
+	}
+
+	public Map<String, Object> registerFarbric(String id) throws Exception {
+		Map<String, Object> resultMap = new HashMap<String, Object>();
+		Map<String, Object> dataMap = secretKeyDAO.querySecretKeyById(id);
+		if (dataMap != null) {
+			if(dataMap.get("passwd")!=null){
+				resultMap.put("status", "fail");
+				resultMap.put("msg", "用户已经注册会员");
+				return resultMap;
+			}			
+		}
+		ExecutorService executor = Executors.newFixedThreadPool(1);
+		Future result = executor.submit(new FarbicRegisterUser(id));
+		executor.shutdown();
+		resultMap = (Map<String, Object>) result.get(120, TimeUnit.SECONDS);
+		String no = seqNoDAO.getFlwNo("secretKey", "SE");
+		resultMap.put("sid", no);
+		Map<String, Object> rmap = secretKeyDAO.queryMemberIdById(id);
+		if (rmap != null) {
+			resultMap.put("memberId", rmap.get("memberId"));
+		} else {
+			resultMap.put("memberId", " ");
+		}
+		resultMap.put("id", id);
+		if(dataMap!=null){
+			secretKeyDAO.updateSecretKey(resultMap);
+		}else{
+			secretKeyDAO.insertSecretKey(resultMap);
+		}
+		
+		resultMap.put("status", "ok");
+		return resultMap;
+	}
+
+	public Map<String, Object> queryFabricResume(String iD, String login) {
+		Map<String, Object> dataMap = secretKeyDAO.querySecretKeyById(iD);
+		Map<String, Object> loginMap = secretKeyDAO.querySecretKeyById(login);
+		Map<String, Object> resultMap = new HashMap<String, Object>();
+		if (dataMap != null) {
+			if(dataMap.get("priKey")==null){
+				resultMap.put(StatusCode.STATUS,StatusCode.STATUS_FAIL);
+				resultMap.put(StatusCode.MSG, "简历库查无此人");
+				return resultMap;
+			}
+			String passwd = (String) loginMap.get("passwd");
+			String priKey = (String) dataMap.get("priKey");
+			String id = (String) dataMap.get("id");
+			String baseId = Base64.encode(id.getBytes());
+			login = Base64.encode(login.getBytes());
+			ExecutorService executor = Executors.newFixedThreadPool(1);
+			Future result = executor.submit(new FabricQueryResume(login, baseId, passwd, priKey));
+			executor.shutdown();
+			try {
+				String jsonStr = (String) result.get(120, TimeUnit.SECONDS);
+				resultMap = BlockChainToMap(jsonStr);
+			} catch (InterruptedException e) {
+				log.error("请求中断", e);
+			} catch (ExecutionException e) {
+				log.error("请求异常", e);
+			} catch (TimeoutException e) {
+				log.error("请求超时", e);
+			}
+
+		}
+		return resultMap;
+	}
+
+	public Map<String, Object> packageInfo(String telPhone, String memberId) throws Exception {
+		Map result = new HashMap();
+		if (telPhone != null && !telPhone.equals("") && memberId != null && !"".equals(memberId)) {
+			// 查询个人信息
+			Map infoMap = registerService.queryPersonInfo(telPhone);
+			String status = (String) infoMap.get("status");
+			String finishFlag = (String) infoMap.get("finishFlag");
+			if (StatusCode.CERTIFICATION_FLAG_SUCCESS.equals(status)
+					&& StatusCode.PERSON_RESUME_FLAG.equals(finishFlag)) {
+				// 对个人信息封装成bean
+				SendPersonInfo personInfo = new SendPersonInfo();
+				if(infoMap!=null&&!infoMap.isEmpty()){
+					personInfo.setName((String) infoMap.get("name"));
+					personInfo.setIdentityNum((String) infoMap.get("identityNum"));
+					personInfo.setBornDate((String) infoMap.get("bornDate"));
+					personInfo.setOrigin((String) infoMap.get("origin"));
+					personInfo.setGender(((String) infoMap.get("gender")));
+					personInfo.setHighestEducation((String) infoMap.get("highestEducation"));
+					personInfo.setPolitical((String) infoMap.get("political"));
+					personInfo.setNation((String) infoMap.get("nation"));
+					personInfo.setMarry((String) infoMap.get("marry"));
+					personInfo.setWorkYear((String) infoMap.get("workYear"));
+					personInfo.setIncome((String)infoMap.get("income"));
+					personInfo.setAddress((String)infoMap.get("address"));
+					personInfo.setEmail((String)infoMap.get("email"));
+					personInfo.setTelPhone((String)infoMap.get("telPhone"));
+				}
+				
+				// 查询工作经验 并封装成bean
+				List workList = personWorkService.queryAllWorkById(memberId);
+				List<SendWork> works = new ArrayList<SendWork>();
+				if(workList!=null&&workList.size()>0){
+					Iterator iterator = workList.iterator();
+					while (iterator.hasNext()) {
+						SendWork work = new SendWork();
+						Map map = (Map) iterator.next();
+						work.setDimissionTime((String) map.get("dimissionTime"));
+						work.setEntryTime((String) map.get("entryTime"));
+						work.setCompanName((String) map.get("entryTime"));
+						work.setPosition((String) map.get("position"));
+						work.setTrade((String) map.get("trade"));
+						work.setWorkDescription((String) map.get("workDescription"));
+						work.setDepartment((String) map.get("department"));
+						work.setId((String) map.get("id"));
+						works.add(work);
+					}
+				}
+
+				// 查询项目 并封装成bean
+				List projectList = personProjectService.queryAllProjectById(memberId);
+				List<SendProject> projects = new ArrayList<SendProject>();
+				if(projectList!=null&&projectList.size()>0){
+					Iterator proIter = projectList.iterator();
+					while (proIter.hasNext()) {
+						SendProject project = new SendProject();
+						Map map = (Map) proIter.next();
+						project.setProjectName((String) map.get(""));
+						project.setProjectBeginTime((String) map.get("projectBeginTime"));
+						project.setProjectEndTime((String) map.get("projectEndTime"));
+						project.setProjectDescription((String) map.get("projectDescription"));
+						project.setCompanyName((String) map.get("companyName"));
+						project.setResponsibility((String) map.get("responsibility"));
+						String id = (String) map.get("id");
+						//List<SendKill> skillList = (List<SendKill>) personProjectService.querySkillByProId(id);
+						//project.setSkillId(skillList);
+						project.setWorkId((String) map.get("workId"));
+						project.setId((String) map.get("id"));
+						projects.add(project);
+					}
+				}
+				
+				// 查询教育并封装成bean
+				List educationList = personEducationService.queryAllEducationById(memberId);
+				List<SendEducation> educations = new ArrayList<SendEducation>();
+				if(educationList!=null&&educationList.size()>0){
+					Iterator educIte = educationList.iterator();
+					while (educIte.hasNext()) {
+						SendEducation education = new SendEducation();
+						Map map = (Map) educIte.next();
+						education.setAdmissionTime((String) map.get("admissionTime"));
+						education.setCredentials((String) map.get("credentials"));
+						education.setEducationBackground((String) map.get("educationBackground"));
+						education.setGraduationTime((String) map.get("graduationTime"));
+						education.setMajor((String) map.get("major"));
+						education.setSchoolName((String) map.get("schoolName"));
+						education.setStatus(((String) map.get("status")));
+						education.setId((String) map.get("id"));
+						educations.add(education);
+					}
+				}
+				
+				// 查询培训并封装成bean
+				List trainList = personTrainService.queryTrainById(memberId);
+				List<SendTrain> trains = new ArrayList<SendTrain>();
+				if(trainList!=null&&trainList.size()>0){
+					Iterator trainIte = trainList.iterator();
+					while (trainIte.hasNext()) {
+						SendTrain train = new SendTrain();
+						Map map = (Map) trainIte.next();
+						train.setCompanName((String) map.get("companName"));
+						train.setStartTime((String) map.get("startTime"));
+						train.setEndTime((String) map.get("endTime"));
+						train.setTrainingDescription((String) map.get("trainingDescription"));
+						train.setTrainingName((String) map.get("trainingName"));
+						train.setId((String) map.get("id"));
+						trains.add(train);
+					}
+
+				}
+				// 查询证书
+				List certList = personCertService.queryCertInfoById(memberId);
+				List<SendCertificate> certs = new ArrayList<SendCertificate>();
+				if(certList!=null&&certList.size()>0){
+					Iterator certIte = certList.iterator();
+					while (certIte.hasNext()) {
+						Map map = (Map) certIte.next();
+						SendCertificate cert = new SendCertificate();
+						cert.setCertificateTime((String) map.get("certificateTime"));
+						cert.setCertificateType((String) map.get("certificateType"));
+						cert.setName((String) map.get("name"));
+						cert.setId((String) map.get("id"));
+						certs.add(cert);
+					}
+				}
+				
+				// 查询技能
+				List skillList = personAllSkillService.querySkillById(memberId);
+				List<SendAllSkills> skills = new ArrayList<SendAllSkills>();
+				if(skillList!=null&&skillList.size()>0){
+					Iterator skillIte = skillList.iterator();
+					while (skillIte.hasNext()) {
+						SendAllSkills skill = new SendAllSkills();
+						Map map = (Map) skillIte.next();
+						skill.setProficiency((String) map.get("proficiency"));
+						skill.setSkillNum((String) map.get("skillNum"));
+						skill.setSkillType((String) map.get("skillType"));
+						skill.setId((String) map.get("id"));
+						skills.add(skill);
+					}
+				}
+				
+				result.put(StatusCode.JSON_INFO, personInfo);
+				result.put(StatusCode.JSON_EDUCATION, educations);
+				result.put(StatusCode.JSON_WORK_EXPE, works);
+				result.put(StatusCode.JSON_PROJECT_EXPE, projects);
+				result.put(StatusCode.JSON_ALL_SKILL, skills);
+				result.put(StatusCode.JSON_TRAIN, trains);
+				result.put(StatusCode.JSON_CERT, certs);
+			}
+		}
+		return result;
+	}
+
+	private void jsonArrayToObject(List list, Class beanClass, List result) {
+		JSONArray jsonArray = JSONArray.fromObject(list.toArray());
+		Collection collection = JSONArray.toCollection(jsonArray);
+		if (collection != null && !collection.isEmpty()) {
+			Iterator it = collection.iterator();
+			while (it.hasNext()) {
+				JSONObject jsonObj = JSONObject.fromObject(it.next());
+				result.add(JSONObject.toBean(jsonObj, beanClass));
+			}
+		}
+	}
+
+	private void savePersonPriKey(Map<String, Object> dataMap) throws Exception {
+
+		String no = seqNoDAO.getFlwNo("secretKey", "SE");
+		dataMap.put("sid", no);
+		secretKeyDAO.insertSecretKey(dataMap);
+
+	}
+	
+	private void updatePersonPriKey(Map<String, Object> dataMap)throws Exception {
+		secretKeyDAO.updatePriKeyandPubKey(dataMap);
+	}
+
+	public Map<String, Object> saveResume(Map<String, Object> param) throws Exception {
+
+		Map<String, Object> resultMap = new HashMap<String, Object>();
+
+		resultMap.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+		String id = (String) param.get("id");
+		String passwd = "";
+		String baseId = Base64.encode(id.getBytes());
+		String login = (String) param.get("login");
+		Map<String, Object> loginMap = null;
+		// 获取信息
+		Map<String, Object> dataMap = secretKeyDAO.querySecretKeyById(id);
+		if (!id.equals(login)) {
+			loginMap = secretKeyDAO.querySecretKeyById(login);
+			passwd = (String) loginMap.get("passwd");
+		} else {
+			passwd = (String) dataMap.get("passwd");
+
+		}
+
+		if (dataMap != null) {
+			if(dataMap.get("pubKey")!=null){// 说明已经注册
+				resultMap.put(StatusCode.MSG, "此人已经录入简历");
+				
+				return resultMap;
+			}			
+		}
+
+		login = Base64.encode(login.getBytes());
+
+		String resume = (String) param.get("json");
+
+		// 生成个人私钥
+		RSA rsa = RSA.create();
+		String pubKey = rsa.getPublicKey();
+		String priKey = rsa.getPrivateKey();
+		// 保存个人私钥
+		Map<String, Object> scrMap = new HashMap<String, Object>();
+		scrMap.put("pubKey", pubKey);
+		scrMap.put("prikey", priKey);
+		scrMap.put("id", id);
+		// 加密简历
+		String json = rsa.encodeByPublicKey(resume, pubKey);
+
+		ExecutorService executor = Executors.newFixedThreadPool(10);
+		Future result = executor.submit(new FabricResumeSave(baseId, passwd, login, json));
+		executor.shutdown();
+		Boolean flag = false;
+
+		try {
+			flag = (Boolean) result.get(120, TimeUnit.SECONDS);
+
+		} catch (InterruptedException e) {
+			log.error("中断异常", e);
+			resultMap.put(StatusCode.MSG, "上传失败");
+			return resultMap;
+
+		} catch (ExecutionException e) {
+			log.error("请求异常", e);
+			resultMap.put(StatusCode.MSG, "上传失败");
+			return resultMap;
+
+		} catch (TimeoutException e) {
+			log.error("请求超时", e);
+			resultMap.put(StatusCode.MSG, "请求超时");
+			return resultMap;
+		}
+		if (flag) {
+			if(dataMap!=null){//执行更新操作
+				updatePersonPriKey(scrMap);
+			}else{
+				savePersonPriKey(scrMap);
+			}
+			
+			resultMap.put(StatusCode.STATUS, StatusCode.STATUS_OK);
+		}
+		return resultMap;
+	}
+
+	/**
+	 * 
+	 * 简历信息发送区块链（可以各个模块发）
+	 * @param param 
+	 * @return Map<String,Object>    返回类型  
+	 * @throws
+	 */
+	/*public Map<String, Object> saveResumeByPerson(Map<String, Object> param) throws Exception {
+		Map<String, Object> resultMap = new HashMap<String, Object>();
+		resultMap.put(StatusCode.STATUS, StatusCode.STATUS_OK);
+		String id = (String) param.get("id");
+		String baseId = Base64.encode(id.getBytes());
+		String login = (String) param.get("login");
+		String resume = (String) param.get("json");
+		// 获取信息
+		Map<String, Object> dataMap = secretKeyDAO.querySecretKeyById(id);
+		if (dataMap != null) {
+			String pubKey = (String) dataMap.get("pubKey");
+			String passwd = (String) dataMap.get("passwd");
+			login = Base64.encode(login.getBytes());
+			// 加密简历
+			RSA rsa = RSA.create();
+			String json = rsa.encodeByPublicKey(resume, pubKey);
+			ExecutorService executor = Executors.newFixedThreadPool(10);
+			Future result = executor.submit(new FabricResumeSave(baseId, passwd, login, json));
+			executor.shutdown();
+			result.get(120, TimeUnit.SECONDS);
+			return resultMap;
+		} else {
+			log.error("获取公钥失败");
+			throw new Exception("获取公钥失败");
+		}
+	}*/
+	/**   
+	 * 各模块内容发送 
+	 * @param sendFlag 是否已发送过到区块链
+	 * @param idCard 身份证
+	 * @param json   发送给区块链的数据
+	 * @return Map<String,Object>    返回类型  
+	 * @throws Exception    设定文件
+	 * */ 
+	public Map<String,Object> sendToBlock(String sendFlag,String idCard,String json) throws Exception{
+		Map<String,Object> result = new HashMap<String,Object>();
+		result.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+		if(!StringUtils.isEmpty(idCard)&&!StringUtils.isEmpty(sendFlag)&&!StringUtils.isEmpty(json)){
+			if (StatusCode.SEND_FABRIC_TRUE.equals(sendFlag)) {//是否有向区块链发送过简历信息,如果就直接发送
+				// 发送给区块链
+				Map<String,Object> sendMap = new HashMap<String,Object>();
+				sendMap.put("id",idCard);
+				sendMap.put("login",idCard);
+				sendMap.put("json",json);
+				result = addResume(sendMap);
+				return result;
+			}else{
+				result.put(StatusCode.MSG, "请暂存草稿");
+				return result;
+			}
+		}else{
+			throw new Exception("请求失败，参数为空");
+		}
+	}
+	
+	public Map<String,Object> addResume(Map<String,Object> param) throws Exception{
+		Map<String, Object> resultMap = new HashMap<String, Object>();
+		resultMap.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+		String id = (String) param.get("id");
+		String baseId = Base64.encode(id.getBytes());
+		String login = (String) param.get("login");
+		String resume = (String) param.get("json");
+		// 获取信息
+		Map<String, Object> dataMap = secretKeyDAO.querySecretKeyById(id);
+		if (dataMap != null) {
+			String pubKey = (String) dataMap.get("pubKey");
+			String passwd = (String) dataMap.get("passwd");
+			login = Base64.encode(login.getBytes());
+			// 加密简历
+			RSA rsa = RSA.create();
+			String json = rsa.encodeByPublicKey(resume, pubKey);
+			ExecutorService executor = Executors.newFixedThreadPool(10);
+			Future result = executor.submit(new FabricResumeAdd(baseId, passwd, login, json));
+			executor.shutdown();
+			Boolean flag = false;
+			try {
+				flag = (Boolean) result.get(120, TimeUnit.SECONDS);
+
+			} catch (InterruptedException e) {
+				log.error("中断异常", e);
+				resultMap.put(StatusCode.MSG, "中断");
+				return resultMap;
+
+			} catch (ExecutionException e) {
+				log.error("请求异常", e);
+				resultMap.put(StatusCode.MSG, "执行失败");
+				return resultMap;
+
+			} catch (TimeoutException e) {
+				log.error("请求超时", e);
+				resultMap.put(StatusCode.MSG, "请求超时");
+				return resultMap;
+			}
+			resultMap.put(StatusCode.STATUS, StatusCode.STATUS_OK);
+			return resultMap;
+		} else {
+			log.error("获取公钥失败");
+			throw new Exception("获取公钥失败");
+		}
+	}
+	
+	
+	
+	
+	
+	
+}

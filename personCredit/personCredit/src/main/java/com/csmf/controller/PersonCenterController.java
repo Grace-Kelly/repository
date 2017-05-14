@@ -1,0 +1,709 @@
+package com.csmf.controller;
+
+import java.io.PrintWriter;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import com.csmf.common.Encryption;
+import com.csmf.common.StatusCode;
+import com.csmf.dao.ISeqNoDAO;
+import com.csmf.service.PersonAllSkillService;
+import com.csmf.service.PersonCertService;
+import com.csmf.service.PersonEducationService;
+import com.csmf.service.PersonInfoService;
+import com.csmf.service.PersonProjectService;
+import com.csmf.service.PersonTrainService;
+import com.csmf.service.PersonWorkService;
+import com.csmf.service.UserRegisterService;
+import com.csmf.util.DateUtil;
+import com.csmf.util.RequestJsonFormat;
+import com.csmf.util.ValidationUtil;
+
+import net.sf.json.JSONObject;
+
+@Controller
+@RequestMapping("/personCenter")
+public class PersonCenterController {
+
+	private Log log = LogFactory.getLog(this.getClass());
+	@Resource
+	private UserRegisterService registerService;
+
+	@Resource
+	private PersonInfoService personInfoService;
+
+	@Resource
+	private PersonEducationService personEducationService;
+
+	@Resource
+	private PersonWorkService personWorkService;
+
+	@Resource
+	private PersonProjectService personProjectService;
+
+	@Resource
+	private PersonTrainService personTrainService;
+
+	@Resource
+	private PersonAllSkillService personAllSkillService;
+
+	@Resource
+	private PersonCertService personCertService;
+
+	@Resource
+	private ISeqNoDAO seqNoDAO;
+
+	/**
+	 * @Title: modifyPassword @Description: 修改个人密码 @param request
+	 *         请求服务器对象HttpServletRequest @param response
+	 *         服务器返回对象HttpServletResponse @return void 返回类型 @throws
+	 **/
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	@RequestMapping("/modifyPwd.do")
+	public void modifyPassword(HttpServletRequest request, HttpServletResponse response) {
+		PrintWriter out = null;
+		String resultStr = null;
+		Map resultMap = null;
+		try {
+			out = response.getWriter();
+			String telPhone = (String) request.getSession().getAttribute("telPhone");
+			if (telPhone != null && !telPhone.equals("")) {
+				JSONObject jsonObject = RequestJsonFormat.toJsonObject(request);
+				if (jsonObject != null && jsonObject.has("userPwd") && jsonObject.has("userNewPwd")
+						&& jsonObject.has("userRePwd")) {
+					// 校验密码正确性
+					String userPwd = (String) jsonObject.get("userPwd");
+					String userNewPwd = (String) jsonObject.get("userNewPwd");
+					String userRePwd = (String) jsonObject.get("userRePwd");
+					if (userNewPwd.equals(userRePwd)) {
+						Map personMap = registerService.queryPersonInfo(telPhone);
+						String password = (String) personMap.get("password");
+						// 原始密码加密
+						userPwd = Encryption.MD5Encrypt(userPwd);
+						if (userPwd.equals(password)) {
+							// 保存新密码 update
+							Map param = new HashMap();
+							param.put("telPhone", telPhone);
+							param.put("password", userPwd);
+							registerService.updatePwdByTelPhone(param);
+							resultMap.put("status", true);
+							resultMap.put("successMsg", "密码修改成功");
+						} else {
+							resultMap.put("status", false);
+							resultMap.put("errorMsg", "初始密码错误");
+						}
+					} else {// 不相等
+						resultMap.put("status", false);
+						resultMap.put("errorMsg", "新密码与重复密码不一致");
+					}
+				} else {
+					resultMap.put("status", false);
+					resultMap.put("errorMsg", "原始密码或者新密码或重复密码不能为空");
+				}
+				resultMap.put("status", true);
+				JSONObject obj = JSONObject.fromObject(resultMap);
+				out.write(obj.toString());
+			} else {
+				resultMap.put("status", false);
+				resultMap.put("errorMsg", "会话超时");
+				JSONObject obj = JSONObject.fromObject(resultMap);
+				out.write(obj.toString());
+			}
+		} catch (Exception e) {
+			catchException(resultMap, out, e, "修改密码失败");
+		} finally {
+			if (out != null)
+				out.close();
+		}
+	}
+
+	/**
+	 * @Title: modifyEmail
+	 * @Description: 修改个人邮箱
+	 * @param request
+	 *            请求服务器对象HttpServletRequest
+	 * @param response
+	 *            服务器返回对象HttpServletResponse
+	 * @return void 返回类型
+	 */
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	@RequestMapping("/modifyEmail.do")
+	public void modifyEmail(HttpServletRequest request, HttpServletResponse response) {
+		PrintWriter out = null;
+		String resultStr = null;
+		Map resultMap = new HashMap();
+		try {
+			out = response.getWriter();
+			String telPhone = (String) request.getSession().getAttribute("telPhone");
+			if (telPhone != null && !telPhone.equals("")) {
+				JSONObject jsonObject = RequestJsonFormat.toJsonObject(request);
+				String newEmail = (String) jsonObject.get("email");
+				if (ValidationUtil.validateEmail(newEmail)) {
+					Map param = new HashMap();
+					param.put("telPhone", telPhone);
+					param.put("email", newEmail);
+					registerService.updatePwdByTelPhone(param);
+					resultMap.put("status", true);
+					resultMap.put("successMsg", "邮箱修改成功");
+				} else {
+					resultMap.put("status", false);
+					resultMap.put("errorMsg", "邮箱格式不正确");
+				}
+			}
+			JSONObject obj = JSONObject.fromObject(resultMap);
+			out.write(resultStr = obj.toString());
+			log.info(resultStr);
+		} catch (Exception e) {
+			catchException(resultMap, out, e, "修改邮箱失败");
+		} finally {
+			if (out != null)
+				out.close();
+		}
+	}
+
+	/**
+	 * @Title: modifyTelPhone
+	 * @Description: 修改个人手机号码
+	 * @param request
+	 *            请求服务器对象HttpServletRequest
+	 * @param response
+	 *            服务器返回对象HttpServletResponse
+	 * @return void 返回类型
+	 */
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	@RequestMapping("/modifyTelPhone.do")
+	public void modifyTelPhone(HttpServletRequest request, HttpServletResponse response) {
+		PrintWriter out = null;
+		String resultStr = null;
+		Map resultMap = new HashMap();
+		try {
+			out = response.getWriter();
+			String telPhone = (String) request.getSession().getAttribute("telPhone");
+			if (telPhone != null && !telPhone.equals("")) {
+				JSONObject jsonObject = RequestJsonFormat.toJsonObject(request);
+				String newTelPhone = (String) jsonObject.get("telPhone");
+				if (ValidationUtil.validateTelPhone(newTelPhone)) {
+					if (!registerService.isExistUserByPhone(newTelPhone)) {
+						Map param = new HashMap();
+						param.put("newTelPhone", newTelPhone);
+						param.put("telPhone", telPhone);
+						registerService.updateTelPhoneByTelPhone(param);
+						resultMap.put("status", true);
+						resultMap.put("successMsg", "手机号修改成功");
+					} else {
+						resultMap.put("status", false);
+						resultMap.put("successMsg", "此手机号的账号已存在");
+					}
+				} else {
+					resultMap.put("status", false);
+					resultMap.put("errorMsg", "手机格式不正确");
+				}
+			}
+			JSONObject obj = JSONObject.fromObject(resultMap);
+			out.write(resultStr = obj.toString());
+			log.info(resultStr);
+		} catch (Exception e) {
+			catchException(resultMap, out, e, "修改手机号失败");
+		} finally {
+			if (out != null)
+				out.close();
+		}
+	}
+
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	@RequestMapping("/showTel.do")
+	public void showTel(HttpServletRequest request, HttpServletResponse response) {
+		Map resultMap = new HashMap();
+		PrintWriter out = null;
+		Map<String, Object> paramMap = new HashMap<String, Object>();
+		try {
+			out = response.getWriter();
+			String telPhone = (String) request.getSession().getAttribute("telPhone");
+			if (!StringUtils.isEmpty(telPhone)) {
+				resultMap.put(StatusCode.STATUS, StatusCode.STATUS_OK);
+				resultMap.put(StatusCode.MSG, "请求成功");
+				resultMap.put(StatusCode.STATUS_RESULT, telPhone);
+			} else {
+				resultMap.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+				resultMap.put(StatusCode.STATUS, "请先登录");
+			}
+			JSONObject obj = JSONObject.fromObject(resultMap);
+			out.write(obj.toString());
+		} catch (Exception e) {
+			catchException(resultMap, out, e, "电话查询失败");
+		} finally {
+			if (out != null)
+				out.close();
+		}
+	}
+	
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	@RequestMapping("/queryStatus.do")
+	public void queryStatus(HttpServletRequest request, HttpServletResponse response) {
+		Map resultMap = new HashMap();
+		PrintWriter out = null;
+		try {
+			out = response.getWriter();
+			String telPhone = (String) request.getSession().getAttribute("telPhone");
+			if(!StringUtils.isEmpty(telPhone)){
+				Map map = registerService.queryPersonInfo(telPhone);
+				String status = (String) map.get("status");
+				Map listMap = new HashMap();
+				resultMap.put(StatusCode.STATUS, StatusCode.STATUS_OK);
+				resultMap.put(StatusCode.MSG, "查询成功");
+				listMap.put("telPhone", telPhone);
+				listMap.put("memberStatus", status);
+				resultMap.put(StatusCode.STATUS_RESULT, listMap);
+			}else{
+				resultMap.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+				resultMap.put(StatusCode.MSG, "查询失败");
+			}
+			JSONObject obj = JSONObject.fromObject(resultMap);
+			out.write(obj.toString());
+		} catch (Exception e) {
+			catchException(resultMap, out, e, "电话查询失败");
+		} finally {
+			if (out != null)
+				out.close();
+		}
+	}
+
+	/**
+	 * 修改个人信息
+	 * 
+	 * @param request
+	 *            请求服务器对象HttpServletRequest
+	 * @param response
+	 *            服务器返回对象HttpServletResponse
+	 * @return void 返回类型
+	 */
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	@RequestMapping("/modifyInfo.do")
+	public void modifyInfo(HttpServletRequest request, HttpServletResponse response) {
+		Map resultMap = new HashMap();
+		PrintWriter out = null;
+		Map<String, Object> paramMap = new HashMap<String, Object>();
+		try {
+			out = response.getWriter();
+			String telPhone = (String) request.getSession().getAttribute("telPhone");
+			String memberId = (String) request.getSession().getAttribute("memberId");
+			JSONObject jsonObject = RequestJsonFormat.toJsonObject(request);
+			if (jsonObject != null) {
+				String name = (String) jsonObject.get("name");
+				String email = (String) jsonObject.get("email");
+				String gender = (String) jsonObject.get("gender");
+				String bornDate = (String) jsonObject.get("bornDate");
+				String workYear = (String) jsonObject.get("workYear");
+				String address = (String) jsonObject.get("address");
+				String income = (String) jsonObject.get("income");
+				String id = (String) jsonObject.get("id");
+				String saveFlag = (String) jsonObject.get("saveFlag");
+				// 做request传进来的数据校验
+				/**
+				 * 校验信息
+				 */
+				paramMap.put("id", id);
+				paramMap.put("name", name);
+				paramMap.put("gender", gender);
+				paramMap.put("bornDate", bornDate);
+				paramMap.put("workYear", workYear);
+				paramMap.put("address", address);
+				paramMap.put("email", email);
+				paramMap.put("income", income);
+				paramMap.put("remark", "remark");
+				Date createTime = DateUtil.stringToDate(DateUtil.dateToString(new Date()));
+				paramMap.put("updateTime", createTime);
+				paramMap.put("saveFlag", saveFlag);
+				paramMap.put("telPhone", telPhone);
+				paramMap.put("memberId", memberId);
+				resultMap = personInfoService.updatePersonInfoByTel(paramMap);// 更新
+				JSONObject obj = JSONObject.fromObject(resultMap);
+				out.write(obj.toString());
+			}
+		} catch (Exception e) {
+			catchException(resultMap, out, e, "个人基本信息保存失败");
+		} finally {
+			if (out != null)
+				out.close();
+		}
+	}
+
+	/**
+	 * 修改个人教育
+	 * 
+	 * @param request
+	 *            请求服务器对象HttpServletRequest
+	 * @param response
+	 *            服务器返回对象HttpServletResponse
+	 * @return void 返回类型
+	 */
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	@RequestMapping("/modifyEduc.do")
+	public void modifyEduc(HttpServletRequest request, HttpServletResponse response) {
+		Map resultMap = null;
+		PrintWriter out = null;
+		Map param = new HashMap();
+		try {
+			out = response.getWriter();
+			String telPhone = (String) request.getSession().getAttribute("telPhone");
+			String memberId = (String) request.getSession().getAttribute("memberId");
+			JSONObject jsonObject = RequestJsonFormat.toJsonObject(request);
+			if (jsonObject != null) {
+				Map<String, Object> result = new HashMap<String, Object>();
+				String admissionTime = (String) jsonObject.get("admissionTime");
+				String graduationTime = (String) jsonObject.get("graduationTime");
+				String schoolName = (String) jsonObject.get("schoolName");
+				String educationBackground = (String) jsonObject.get("educationBackground");
+				String credentials = (String) jsonObject.get("credentials");
+				String major = (String) jsonObject.get("major");
+				String saveFlag = (String) jsonObject.get("saveFlag");
+				String id = (String) jsonObject.get("id");
+				result.put("id", id);
+				result.put("admissionTime", DateUtil.stringToDate(admissionTime));
+				result.put("graduationTime", DateUtil.stringToDate(graduationTime));
+				result.put("schoolName", schoolName);
+				result.put("educationBackground", educationBackground);
+				result.put("credentials", credentials);
+				result.put("major", major);
+				Date createTime = DateUtil.stringToDate(DateUtil.dateToString(new Date()));
+				result.put("createTime", createTime);
+				result.put("remark", "remark");
+				// result.put("status", "0");
+				result.put("updateTime", createTime);
+				// result.put("file_id", "file_id");
+				result.put("saveFlag", saveFlag);// 保存本地数据库
+				result.put("telPhone", telPhone);
+				result.put("memberId", memberId);
+				resultMap = personEducationService.updateEducationInfoById(result);
+			} else {
+				resultMap.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+				resultMap.put(StatusCode.MSG, "请求异常");
+			}
+			JSONObject obj = JSONObject.fromObject(resultMap);
+			out.write(obj.toString());
+		} catch (Exception e) {
+			catchException(resultMap, out, e, "保存教育资料失败");
+		} finally {
+			if (out != null)
+				out.close();
+		}
+	}
+
+	/**
+	 * 修改个人工作
+	 * 
+	 * @param request
+	 *            请求服务器对象HttpServletRequest
+	 * @param response
+	 *            服务器返回对象HttpServletResponse
+	 * @return void 返回类型
+	 */
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	@RequestMapping("/modifyWork.do")
+	public void modifyWork(HttpServletRequest request, HttpServletResponse response) {
+		Map resultMap = null;
+		PrintWriter out = null;
+		Map param = new HashMap();
+		try {
+			resultMap = new HashMap();
+			out = response.getWriter();
+			String telPhone = (String) request.getSession().getAttribute("telPhone");
+			String memberId = (String) request.getSession().getAttribute("memberId");
+			JSONObject jsonObject = RequestJsonFormat.toJsonObject(request);
+			if (jsonObject != null) {
+				Map<String, Object> result = new HashMap<String, Object>();
+				String entryTime = (String) jsonObject.get("entryTime");
+				String dimissionTime = (String) jsonObject.get("dimissionTime");
+				String companyName = (String) jsonObject.get("companyName");
+				String position = (String) jsonObject.get("position");
+				String workDescription = (String) jsonObject.get("workDescription");
+				String trade = (String) jsonObject.get("trade");
+				String department = (String) jsonObject.get("department");
+				String saveFlag = (String) jsonObject.get("saveFlag");
+				String id = (String) jsonObject.get("id");
+				/*
+				 * 校验数据正确性
+				 */
+				result.put("id", id);
+				result.put("entryTime", new Date());
+				result.put("dimissionTime", new Date());
+				result.put("companyName", companyName);
+				result.put("position", position);
+				result.put("workDescription", workDescription);
+				result.put("trade", trade);
+				result.put("department", department);
+				Date createTime = DateUtil.stringToDate(DateUtil.dateToString(new Date()));
+				result.put("createTime", createTime);
+				result.put("updateTime", createTime);
+				result.put("saveFlag", saveFlag);// 保存本地数据库
+				result.put("remark", "remark");
+				result.put("telPhone", telPhone);
+				result.put("memberId", memberId);
+				resultMap = personWorkService.updateWorkInfoBy(result);
+			} else {
+				resultMap.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+				resultMap.put(StatusCode.MSG, "请求异常");
+			}
+			JSONObject obj = JSONObject.fromObject(resultMap);
+			out.write(obj.toString());
+		} catch (
+
+		Exception e) {
+			catchException(resultMap, out, e, "保存工作经验失败");
+		} finally {
+			if (out != null)
+				out.close();
+		}
+	}
+
+	/**
+	 * 简历工作参与项目信息添加
+	 * 
+	 * @param request
+	 *            请求服务器信息HttpServletRequest
+	 * @param response
+	 *            服务器返回响应信息HttpServletResponse
+	 * @return void 返回类型
+	 */
+	@SuppressWarnings("unchecked")
+	@RequestMapping("/modifyProject.do")
+	public void modifyProject(HttpServletRequest request, HttpServletResponse response) {
+		Map resultMap = null;
+		PrintWriter out = null;
+		Map param = new HashMap();
+		try {
+			out = response.getWriter();
+			String telPhone = (String) request.getSession().getAttribute("telPhone");
+			String memberId = (String) request.getSession().getAttribute("memberId");
+			JSONObject jsonObject = RequestJsonFormat.toJsonObject(request);
+			if (jsonObject != null) {
+				Map<String, Object> result = new HashMap<String, Object>();
+				String projectBeginTime = (String) jsonObject.get("projectBeginTime");
+				String projectEndTime = (String) jsonObject.get("projectEndTime");
+				String companyName = (String) jsonObject.get("companyName");
+				String projectName = (String) jsonObject.get("projectName");
+				String projectDescription = (String) jsonObject.get("projectDescription");
+				String responsibility = (String) jsonObject.get("responsibility");
+				String saveFlag = (String) jsonObject.get("saveFlag");
+				String id = (String) jsonObject.get("id");
+				// String skillId = (String) jsonObject.get("skillId");
+				// String workId = (String) jsonObject.get("workId");
+				/*
+				 * 校验数据正确性
+				 */
+				result.put("id", id);
+				result.put("projectBeginTime", new Date());
+				result.put("projectEndTime", new Date());
+				result.put("companyName", companyName);
+				result.put("projectName", projectName);
+				result.put("projectDescription", projectDescription);
+				result.put("responsibility", responsibility);
+				Date createTime = DateUtil.stringToDate(DateUtil.dateToString(new Date()));
+				result.put("createTime", createTime);
+				result.put("updateTime", createTime);
+				// result.put("skillId", skillId);
+				// result.put("workId", workId);
+				result.put("saveFlag", saveFlag);// 保存本地数据库
+				result.put("remark", "remark");
+				result.put("telPhone", telPhone);
+				result.put("memberId", memberId);
+				resultMap = personProjectService.updatePersonProjectById(result);
+			} else {
+				resultMap.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+				resultMap.put(StatusCode.MSG, "请求异常");
+			}
+			JSONObject obj = JSONObject.fromObject(resultMap);
+			out.write(obj.toString());
+		} catch (Exception e) {
+			catchException(resultMap, out, e, "项目信息保存出错");
+		} finally {
+			if (out != null)
+				out.close();
+		}
+	}
+
+	/**
+	 * 修改培训
+	 * 
+	 * @param request
+	 *            请求服务器信息HttpServletRequest
+	 * @param response
+	 *            服务器返回响应信息HttpServletResponse
+	 * @return void 返回类型
+	 */
+	@RequestMapping("/modifyTrain.do")
+	public void modifyTrain(HttpServletRequest request, HttpServletResponse response) {
+		Map resultMap = new HashMap();
+		PrintWriter out = null;
+		Map param = new HashMap();
+		try {
+			out = response.getWriter();
+			String telPhone = (String) request.getSession().getAttribute("telPhone");
+			String memberId = (String) request.getSession().getAttribute("memberId");
+			JSONObject jsonObject = RequestJsonFormat.toJsonObject(request);
+			if (jsonObject != null) {
+				Map<String, Object> result = new HashMap<String, Object>();
+				String startTime = (String) jsonObject.get("startTime");
+				String endTime = (String) jsonObject.get("endTime");
+				String companyName = (String) jsonObject.get("companyName");
+				String trainingLevel = (String) jsonObject.get("trainingLevel");
+				String trainingName = (String) jsonObject.get("trainingName");
+				String saveFlag = (String) jsonObject.get("saveFlag");
+				String trainingType = (String) jsonObject.get("trainingType");
+				String id = (String) jsonObject.get("id");
+				/*
+				 * 校验数据正确性
+				 */
+				result.put("id", id);
+				result.put("startTime", new Date());
+				result.put("endTime", new Date());
+				result.put("companyName", companyName);
+				result.put("trainingLevel", trainingLevel);
+				result.put("trainingType", trainingType);
+				result.put("trainingName", trainingName);
+				Date createTime = DateUtil.stringToDate(DateUtil.dateToString(new Date()));
+				result.put("createTime", createTime);
+				result.put("updateTime", createTime);
+				result.put("saveFlag", saveFlag);// 保存本地数据库
+				result.put("remark", "remark");
+				result.put("telPhone", telPhone);
+				result.put("memberId", memberId);
+				resultMap = personTrainService.updateTrainById(result);
+			} else {
+				resultMap.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+				resultMap.put(StatusCode.MSG, "请求异常");
+			}
+			JSONObject obj = JSONObject.fromObject(resultMap);
+			out.write(obj.toString());
+		} catch (Exception e) {
+			catchException(resultMap, out, e, "项目信息保存出错");
+		} finally {
+			if (out != null)
+				out.close();
+		}
+	}
+
+	/**
+	 * 修改证书
+	 * 
+	 * @param request
+	 *            请求服务器信息HttpServletRequest
+	 * @param response
+	 *            服务器返回响应信息HttpServletResponse
+	 * @return void 返回类型
+	 */
+	@RequestMapping("/modifyCert.do")
+	public void modifyCert(HttpServletRequest request, HttpServletResponse response) {
+		Map resultMap = new HashMap();
+		PrintWriter out = null;
+		Map param = new HashMap();
+		try {
+			out = response.getWriter();
+			String telPhone = (String) request.getSession().getAttribute("telPhone");
+			String memberId = (String) request.getSession().getAttribute("memberId");
+			JSONObject jsonObject = RequestJsonFormat.toJsonObject(request);
+			if (jsonObject != null) {
+				Map<String, Object> result = new HashMap<String, Object>();
+				String certificateTime = (String) jsonObject.get("certificateTime");
+				String name = (String) jsonObject.get("name");
+				String certificateNum = (String) jsonObject.get("certificateNum");
+				String id = (String) jsonObject.get("id");
+				result.put("id", id);
+				result.put("certificateTime", new Date());
+				result.put("name", name);
+				Date createTime = DateUtil.stringToDate(DateUtil.dateToString(new Date()));
+				result.put("createTime", createTime);
+				result.put("updateTime", createTime);
+				result.put("saveFlag", "local");// 保存本地数据库
+				result.put("certificateNum", certificateNum);
+				result.put("remark", "remark");
+				result.put("telPhone", telPhone);
+				result.put("memberId", memberId);
+				resultMap = personCertService.saveCertInfo(result);
+			} else {
+				resultMap.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+				resultMap.put(StatusCode.MSG, "请求异常");
+			}
+			JSONObject obj = JSONObject.fromObject(resultMap);
+			out.write(obj.toString());
+		} catch (Exception e) {
+			catchException(resultMap, out, e, "项目信息保存出错");
+		} finally {
+			if (out != null)
+				out.close();
+		}
+	}
+
+	/**
+	 * 修改技能
+	 * 
+	 * @param request
+	 *            请求服务器信息HttpServletRequest
+	 * @param response
+	 *            服务器返回响应信息HttpServletResponse
+	 * @return void 返回类型
+	 */
+	@RequestMapping("/modifySkill.do")
+	public void modifySkill(HttpServletRequest request, HttpServletResponse response) {
+		Map resultMap = new HashMap();
+		PrintWriter out = null;
+		Map param = new HashMap();
+		try {
+			out = response.getWriter();
+			String telPhone = (String) request.getSession().getAttribute("telPhone");
+			String memberId = (String) request.getSession().getAttribute("memberId");
+			JSONObject jsonObject = RequestJsonFormat.toJsonObject(request);
+			if (jsonObject != null) {
+				Map<String, Object> result = new HashMap<String, Object>();
+				String skillNum = (String) jsonObject.get("skillNum");
+				String proficiency = (String) jsonObject.get("proficiency");// 熟练度
+				String saveFlag = (String) jsonObject.get("saveFlag");
+				String id = (String) jsonObject.get("id");
+				/*
+				 * 校验数据正确性
+				 */
+				result.put("id", id);
+				result.put("skillNum", skillNum);
+				result.put("proficiency", proficiency);
+				Date createTime = DateUtil.stringToDate(DateUtil.dateToString(new Date()));
+				result.put("createTime", createTime);
+				result.put("updateTime", createTime);
+				result.put("saveFlag", saveFlag);// 保存本地数据库
+				result.put("remark", "remark");
+				result.put("telPhone", telPhone);
+				result.put("memberId", memberId);
+				resultMap = personAllSkillService.updatePersonSkillById(result);
+			} else {
+				resultMap.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+				resultMap.put(StatusCode.MSG, "请求异常");
+			}
+			JSONObject obj = JSONObject.fromObject(resultMap);
+			out.write(obj.toString());
+		} catch (Exception e) {
+			catchException(resultMap, out, e, "项目信息保存出错");
+		} finally {
+			if (out != null)
+				out.close();
+		}
+	}
+
+	private void catchException(Map result, PrintWriter out, Exception e, String message) {
+		log.error("异常错误信息：" + e);
+		e.printStackTrace();
+		result.put("status", false);
+		result.put("errorMsg", message);
+		JSONObject obj = JSONObject.fromObject(result);
+		out.write(obj.toString());
+	}
+}

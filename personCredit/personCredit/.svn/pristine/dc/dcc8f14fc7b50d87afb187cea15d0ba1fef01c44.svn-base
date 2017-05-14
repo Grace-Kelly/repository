@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" ?>    
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.csmf.dao.PersonInfoDao">
+	
+	
+	<insert id="savePersonInfo" parameterType="java.util.HashMap">
+		INSERT into t_person_info (id,name,create_time,update_time,email,remark,born_date,gender,work_year,income,memberId,save_flag,address)
+		<trim prefix="values (" suffix=")" suffixOverrides="," >      
+          <if test="id != null" >#{id},</if>      
+         <if test="name != null" >#{name},</if>
+         <if test="createTime != null" >#{createTime},</if>
+         <if test="updateTime != null" >#{updateTime},</if>
+         <if test="email != null" >#{email},</if>
+         <if test="remark != null" >#{remark},</if>
+         <if test="bornDate != null" >#{bornDate},</if>
+         <if test="gender != null" >#{gender},</if>
+         <if test="workYear != null" >#{workYear},</if>
+         <if test="income != null" >#{income},</if>
+         <if test="memberId != null" >#{memberId},</if>
+         <if test="saveFlag != null" >#{saveFlag},</if>
+         <if test="address != null" >#{address},</if>      
+        </trim>
+	</insert>
+	<update id="updatePersonInfoById" parameterType="java.util.HashMap">
+		update t_person_info 
+		<trim prefix="set " suffixOverrides="," > 
+		<if test="name != null" >name=#{name},</if>
+		<if test="updateTime != null" >update_time=#{updateTime},</if>
+		<if test="email != null" >email=#{email},</if>
+		<if test="remark != null" >remark=#{remark},</if>
+		<if test="bornDate != null" >born_date=#{bornDate},</if>
+		<if test="gender != null" >gender=#{gender},</if>
+		<if test="workYear != null" >work_year=#{workYear},</if>
+		<if test="income != null" >income=#{income},</if>
+		<if test="saveFlag != null" >save_flag=#{saveFlag},</if>
+		<if test="address != null" >address=#{address},</if>
+		</trim>
+		where 
+		<if test="memberId!=null">memberId=#{memberId} </if>
+		<if test="id!=null">and id=#{id} </if>
+	</update>
+	
+	<select id="queryInfoById" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		SELECT 
+		tpi.id id,tpi.name name,tpi.identity_num identityNum,tmi.member_status status,
+		tpi.email email,tpi.born_date bornDate,tpi.gender gender,tpi.work_year workYear,tpi.income income,
+		tpi.save_flag saveFlag,tpi.memberId memberId,tpi.address address 
+		from t_person_info tpi,t_member_info tmi 
+		where tmi.telPhone=#{telPhone} and tmi.member_id = tpi.memberId 
+	</select>
+
+	
+</mapper>

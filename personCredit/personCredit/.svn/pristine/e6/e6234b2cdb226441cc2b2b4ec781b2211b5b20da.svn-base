@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>    
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >    
+<mapper namespace="com.csmf.dao.PersonCertificationDao" >
+    
+    <!-- 上传多个文件 -->
+    <insert id="saveMoreFile" parameterType="java.util.List">
+        insert into t_obj_file(id,obj_id,type,file_path,create_time,remark,type_id) values
+          <foreach collection="list" item="item" index="index"  separator=",">    
+             (#{item.id},#{item.objId},#{item.type}, #{item.filePath},#{item.createTime},#{item.remark},#{item.typeId},)
+          </foreach>
+    </insert>
+    
+    
+    <!-- 上传多个文件 -->
+    <update id="updateInfoById" parameterType="java.util.HashMap">
+        update t_obj_file set process_time = #{processTime} where member_id=#{memberId} and type="0"
+    </update>
+    
+    
+</mapper>

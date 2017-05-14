@@ -1,0 +1,82 @@
+package com.csmf.common;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+public class StatusCode {
+	
+	public static String LOGIN_STAUTS = "LOGIN";
+	
+	public static String LOGIN_FAIL = "0";//登陆失败
+	
+	public static String LOGIN_SUCCESS = "1";//登陆成功
+	
+	public static String LOGIN_ERROR = "-1";//登陆异常
+	
+	public static String MSG = "msg";//返回消息
+	public static String STATUS = "status";
+	public static String STATUS_OK = "ok";
+	public static String STATUS_FAIL = "fail";
+	
+	public static String JSON_INFO = "info"; //个人基本信息
+	
+	public static String JSON_EDUCATION="education";//个人教育
+	
+	public static String JSON_WORK_EXPE="workExpe";//工作经历
+	
+	public static String JSON_PROJECT_EXPE="projectExpe";//项目经验
+	
+	public static String JSON_ALL_SKILL="allSkill";//全部技能
+	
+	public static String JSON_TRAIN="train";//培训
+	
+	public static String JSON_CERT="cert";//证书
+	
+	public static String SEND_FABRIC_TRUE="1";//简历已发送给区块链
+	
+	public static String SEND_FABRIC_FALSE="0";//简历未发送给区块链
+	
+	public static String CERTIFICATION_FLAG_SUCCESS="1";//认证成功
+	
+	public static String CERTIFICATION_FLAG_FAIL="0";//认证失败
+	
+	public static String PERSON_RESUME_FLAG="1111111";//简历完成度，1为基本信息，1为教育，1为工作经验，1为项目经验,1为培训,1为证书,1为技能
+
+	public static String PERSON_RESUME_FLAG_FALSE="0000000";//简历完成度，1为基本信息，1为教育，1为工作经验，1为项目经验,1为培训,1为证书,1为技能
+
+	public static Map<String,String> RESUMETYPE = new HashMap<String, String>();
+	
+	public static String JOBRESUME="51job";
+	public static List<String> RESUMEANALYSIS=new ArrayList<String>();//需要判断的选项
+	public static String WORK = "workExAnalysis";
+	public static String BASE = "baseAnalysis";
+	public static String PROJECT = "projectExAnalysis";
+	public static String TRAIN = "trainAnalysis";
+	public static String CERT = "certificateAnalysis";
+	public static String SKILL = "skillAnalysis";
+	public static String EDU = "eduAnalysis";
+	
+	static{
+		RESUMETYPE.put(JOBRESUME, "jobResume");
+		RESUMEANALYSIS.add(WORK);
+		RESUMEANALYSIS.add(BASE);
+		RESUMEANALYSIS.add(PROJECT);
+		RESUMEANALYSIS.add(TRAIN);
+		RESUMEANALYSIS.add(CERT);
+		RESUMEANALYSIS.add(SKILL);
+		RESUMEANALYSIS.add(EDU);
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+
+}

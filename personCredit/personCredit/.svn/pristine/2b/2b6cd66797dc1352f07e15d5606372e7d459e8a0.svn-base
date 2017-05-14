@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" ?>    
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.csmf.dao.PersonProjectDao">
+	
+	
+	<!-- 保存个人项目信息 -->
+    <insert id="savePersonProjectInfo" parameterType="java.util.HashMap">
+        insert into t_person_proj_expe_info(id,member_id,project_begin_time,project_end_time,company_name,project_description,responsibility,create_time,remark,update_time,save_flag,project_name)
+        <trim prefix="values (" suffix=")" suffixOverrides="," >      
+         <if test="id != null" >#{id},</if>      
+         <if test="memberId != null" >#{memberId},</if>
+         <if test="projectBeginTime != null" >#{projectBeginTime},</if>
+         <if test="projectEndTime != null" >#{projectEndTime},</if>
+         <if test="companyName != null" >#{companyName},</if>
+         <if test="projectDescription != null" >#{projectDescription},</if>
+         <if test="responsibility != null" >#{responsibility},</if>
+         <if test="createTime != null" >#{createTime},</if>
+         <if test="remark != null" >#{remark},</if>
+         <if test="updateTime != null" >#{updateTime},</if>
+         <if test="saveFlag != null" >#{saveFlag},</if> 
+         <if test="projectName != null" >#{projectName},</if>
+        </trim>
+    </insert>
+	
+	<update id="updatePersonProjectById" parameterType="java.util.HashMap">
+		update t_person_work_expe_info
+		<trim prefix="set " suffixOverrides=",">
+			<if test="projectBeginTime != null">project_begin_time=#{projectBeginTime},</if>
+			<if test="projectEndTime != null">project_end_time=#{projectEndTime},
+			</if>
+			<if test="companyName != null">company_name=#{companyName},</if>
+			<if test="projectDescription != null">project_description=#{projectDescription},</if>
+			<if test="responsibility != null">responsibility=#{responsibility},
+			</if>
+			<if test="workID != null">work_id=#{workID},</if>
+			<if test="remark != null">remark=#{remark},</if>
+			<if test="updateTime != null">update_time=#{updateTime},</if>
+			<if test="saveFlag != null">save_flag=#{saveFlag}</if>
+			<if test="projectName != null" >project_name=#{projectName},</if>
+		</trim>
+		where member_id=#{memberId} and id=#{id}
+	</update>
+	
+	 <!-- 根据用户的memberId查询个人全部工作项目-->
+    <select id="queryAllProjectById" parameterType="java.lang.String" resultType="java.util.HashMap">
+        select tppei.id id,
+        	DATE_FORMAT(tppei.project_begin_time,'%Y/%m/%d') as projectBeginTime,
+        	DATE_FORMAT(tppei.project_end_time,'%Y/%m/%d') as projectEndTime,
+        	tpwei.company_name as companyName,
+        	tppei.project_description as projectDescription,
+        	tppei.responsibility as responsibility,
+        	tppei.work_id as workID,
+        	tppei.save_flag as saveFlag,
+        	tppei.project_name as projectName
+        from t_person_proj_expe_info tppei,t_person_work_expe_info tpwei
+        where tppei.member_Id=#{memberId} and tpwei.id=tppei.company_name
+    </select>
+
+	
+</mapper>

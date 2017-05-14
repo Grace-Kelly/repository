@@ -1,0 +1,48 @@
+package com.csmf.service.impl;
+
+import com.csmf.dao.PersonEducationDao;
+import com.csmf.service.PersonEducationService;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.stereotype.Service;
+
+import javax.annotation.Resource;
+import java.util.List;
+import java.util.Map;
+
+@Service("personEducationService")
+public class PersonEducationSeviceImpl implements PersonEducationService {
+
+	private Log log = LogFactory.getLog(this.getClass());
+
+	@Resource
+	private PersonEducationDao personEducationDao;
+
+	public void savePersonEducationInfo(Map map) throws Exception {
+		try{
+			personEducationDao.savePersonEducationInfo(map);
+		}catch (Exception e) {
+			log.error("保存教育信息失败：",e);
+		}
+	}
+
+	public List queryAllEducationById(String memberId) throws Exception {
+		List resultList = null;
+		try{
+			resultList = personEducationDao.queryAllEducationById(memberId);
+		}catch (Exception e) {
+			log.error("查询教育信息失败：",e);
+		}
+		return resultList;
+	}
+
+	public void updateEducationInfoById(Map<String, Object> param) throws Exception {
+		try{
+			personEducationDao.  updateEducationInfoById(param);
+		}catch (Exception e) {
+			log.error("更新教育信息失败：",e);
+		}
+	}
+
+}

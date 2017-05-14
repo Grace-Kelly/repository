@@ -1,0 +1,96 @@
+package com.csmf.service.impl;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.stereotype.Service;
+
+import com.csmf.dao.ISeqNoDAO;
+import com.csmf.dao.PersonWorkDao;
+import com.csmf.service.PersonWorkService;
+import com.csmf.util.DateUtil;
+
+import net.sf.json.JSONObject;
+
+@Service("personWorkService")
+public class PersonWorkServiceImpl implements PersonWorkService {
+
+	private Log log = LogFactory.getLog(this.getClass());
+
+	@Resource
+	private PersonWorkDao personWorkDao;
+	
+	@Resource
+	private ISeqNoDAO seqNoDAO;
+
+	public void savePersonWorkInfo(Map map) throws Exception {
+		try{
+			personWorkDao.savePersonWorkInfo(map);
+		}catch (Exception e) {
+			log.error("保存工作信息失败：",e);
+		}
+	}
+
+	public List queryCompanyById(String memberId) throws Exception {
+		List resutlList = null;
+		try{
+			resutlList = personWorkDao.queryCompanyById(memberId);
+		}catch (Exception e) {
+			log.error("查询所有公司信息失败：",e);
+		}
+		return resutlList;
+	}
+
+	public List queryAllWorkById(String memberId) throws Exception {
+		List resutlList = null;
+		try{
+			resutlList = personWorkDao.queryAllWorkById(memberId);
+		}catch (Exception e) {
+			log.error("查询所有工作信息失败：",e);
+		}
+		return resutlList;
+	}
+
+	public void updateWorkInfoBy(Map<String, Object> param) throws Exception {
+		try{
+			personWorkDao.updateWorkInfoById(param);
+		}catch (Exception e) {
+			log.error("更新工作信息失败：",e);
+		}
+	}
+	
+	public Map<String,Object> validateInfo(JSONObject jsonObject) throws Exception{
+		Map<String,Object> result  = new HashMap<String,Object>();
+		String entryTime = (String) jsonObject.get("entryTime");
+		String dimissionTime = (String) jsonObject.get("dimissionTime");
+		String companyName = (String) jsonObject.get("companyName");
+		String position = (String) jsonObject.get("position");
+		String workDescription = (String) jsonObject.get("workDescription");
+		String trade = (String) jsonObject.get("trade");
+		String department = (String) jsonObject.get("department");
+		/*
+		 * 校验数据正确性
+		 */
+		result.put("id", seqNoDAO.getFlwNo("PS", "W"));
+		result.put("entryTime", new Date());
+		result.put("dimissionTime", new Date());
+		result.put("companyName", companyName);
+		result.put("position", position);
+		result.put("workDescription",workDescription);
+		result.put("trade", trade);
+		result.put("department", department);
+		Date createTime = DateUtil.stringToDate(DateUtil.dateToString(new Date()));
+		result.put("createTime", createTime);
+		result.put("updateTime", createTime);
+		result.put("saveFlag", "local");// 保存本地数据库
+		result.put("remark", "remark");
+		return result;
+	}
+	
+}

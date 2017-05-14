@@ -1,0 +1,91 @@
+package com.csmf.service.impl;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.stereotype.Service;
+
+import com.csmf.dao.ISeqNoDAO;
+import com.csmf.dao.PersonProjectDao;
+import com.csmf.service.PersonProjectService;
+
+import net.sf.json.JSONObject;
+
+@Service("personProjectService")
+public class PersonProjectServiceImpl implements PersonProjectService {
+
+	private Log log = LogFactory.getLog(this.getClass());
+
+	@Resource
+	private PersonProjectDao personProjectDao;
+	
+	@Resource
+	private ISeqNoDAO seqNoDAO;
+
+	public void savePersonProjectInfo(Map map) throws Exception {
+		try {
+			personProjectDao.savePersonProjectInfo(map);
+		} catch (Exception e) {
+			log.error("保存个人项目失败：", e);
+		}
+	}
+
+	public List queryAllProjectById(String memberId) throws Exception {
+		List resultList = null;
+		try {
+			resultList = personProjectDao.queryAllProjectById(memberId);
+		} catch (Exception e) {
+			log.error("查询个人项目失败：", e);
+		}
+		return resultList;
+	}
+
+	public void updatePersonProjectById(Map<String, Object> param) throws Exception {
+		try {
+			personProjectDao.updatePersonProjectById(param);
+		} catch (Exception e) {
+			log.error("更新个人项目失败：", e);
+		}
+	}
+	
+	public Map<String,Object> validateInfo(JSONObject jsonObject) throws Exception{
+		Map<String,Object> result = new HashMap<String,Object>();
+		String projectBeginTime = (String) jsonObject.get("projectBeginTime");
+		String projectEndTime = (String) jsonObject.get("projectEndTime");
+		String companyName = (String) jsonObject.get("companyName");
+		String projectDescription = (String) jsonObject.get("projectDescription");
+		String responsibility = (String) jsonObject.get("responsibility");
+		String skillId = (String) jsonObject.get("skillId");
+		String workId = (String) jsonObject.get("workId");
+		/*
+		 * 校验数据正确性
+		 */
+		result.put("id", seqNoDAO.getFlwNo("PS", "W"));
+		result.put("projectBeginTime", new Date());
+		result.put("projectEndTime", new Date());
+		result.put("companyName", companyName);
+		result.put("projectDescription", projectDescription);
+		result.put("responsibility", responsibility);
+		result.put("createTime", new Date());
+		result.put("updateTime", new Date());
+		result.put("skillId", skillId);
+		result.put("workId", workId);
+		result.put("saveFlag", "local");// 保存本地数据库
+		result.put("remark", "");
+		return result;
+	}
+	
+	
+	
+
+	public List querySkillByProId(String id) throws Exception {
+		return null;
+	}
+
+}

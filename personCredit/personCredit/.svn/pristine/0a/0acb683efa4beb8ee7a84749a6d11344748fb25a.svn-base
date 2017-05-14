@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+<script type="text/javascript" src="js/jquery-1.8.3.min.js"></script>
+</head>
+<body>
+	<div>
+		telphone:<input type="text" id="telPhone"><br/>
+		password:<input type="text" id="userPwd"><br/>
+		rePwd:<input type="text" id="userRePwd"><br/>
+		codeValue:<input type="text" id="codeValue"><br/>
+		<div id="submit">submit</div>
+	</div>
+</body>
+</html>
+<script>
+	$(function(){
+		$("#submit").click(function(){
+			var telPhone = $("#telPhone").val();
+			var userPwd = $("#userPwd").val();
+			var userRePwd = $("#userRePwd").val();
+			var codeValue = $("#codeValue").val();
+			$.ajax({
+				type:"post",
+				url:"registerUser.do",
+		    	data:"{'telPhone':'"+telPhone+"','userPwd':'"+userPwd+"','userRePwd':'"+userRePwd+"','codeValue':'"+codeValue+"'}",
+		    	dataType:"json",
+				success:function(data){
+		    		var status = data.status;
+		    		var errorMsg = data.errorMsg;
+		    		alert(status+" : "+errorMsg);
+		    	},
+			 		error:function(){
+			 			alert('系统异常');
+			 	}
+			});
+		});
+		
+	});
+</script>

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+<script type="text/javascript" src="js/jquery-1.8.3.min.js"></script>
+</head>
+<body>
+	<form id="formId" method="post">
+    <input name="passwd" ><br>
+    <input name="email"><br>
+   
+</form>
+ <input id="submit" type="button" value="提交">
+<script>
+	$(function(){
+		$("#submit").click(function(){
+			$.ajax({
+				type:"post",
+				url:"companyAdmin/companyRegrister.do",
+		    	data:$('#formId').serialize(),
+		    	dataType:'json',
+				success:function(data){
+		    		
+		    	},
+			 		error:function(){
+			 			alert('系统异常');
+			 	}
+			});
+		});
+		
+	});
+</script>
+</body>
+</html>

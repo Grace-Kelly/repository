@@ -1,0 +1,39 @@
+package com.csmf.dao;
+
+import java.util.List;
+import java.util.Map;
+
+
+public interface CompanyAdminDao {
+	
+//	int selectOrgInfoTotalNum();
+//	
+//	List<Map> selectOrgInfoByPage(Map param);
+//	
+//	Map selectOrgInfo(Map param);
+//	
+//	void insertOrgInfo(Map param);
+//	
+//	void updateOrgInfo(Map param);
+//	
+//	int selectPositionInfoNum();
+//	
+//	List<Map> selectPositionInfoByPage(Map param);
+//	
+//	Map selectPositionInfo(Map param);
+//	
+//	void insertPositionInfo(Map param);
+//	
+//	void updatePositionInfo(Map param);
+	
+	Map<String,Object> queryCompanyAdmin(Map<String,Object> param);
+	
+	void saveCompanyAdmin(Map<String,Object> param);
+	
+	Map<String,Object> queryMermberIDBy(Map<String,Object> param);
+	
+	String queryIsSendResumeByID(String id);
+	
+	void updateCompanylogin(Map<String,Object> param) throws Exception;
+
+}

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>    
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.csmf.dao.UserRegisterDao">
+	<!-- <resultMap id="BaseResultMap" type="com.csmf.dto.User">
+		<result column="memberId" property="memberId" jdbcType="INTEGER" />
+		<result column="name" property="name" jdbcType="VARCHAR" />
+		<result column="identity_num" property="identityNum" jdbcType="VARCHAR" />
+		<result column="password" property="password" jdbcType="VARCHAR" />
+		<result column="telPhone" property="telPhone" jdbcType="VARCHAR" />
+		<result column="member_type" property="memberType" jdbcType="VARCHAR" />
+		<result column="member_status" property="memberStatus" jdbcType="VARCHAR" />
+		<result column="create_time" property="createTime" jdbcType="DATE" />
+		<result column="update_time" property="updateTime" jdbcType="DATE" />
+		<result column="companyId" property="companyId" jdbcType="VARCHAR" />
+		<result column="gender" property="gender" jdbcType="VARCHAR" />
+		<result column="born_day" property="bornDay" jdbcType="DATE" />
+		<result column="address" property="address" jdbcType="VARCHAR" />
+		<result column="send_flag" property="sendFlag" jdbcType="CHAR" />
+		<result column="finish_flag" property="finishFlag" jdbcType="CHAR" />
+	</resultMap> -->
+
+	<!-- 通过电话查询是否存在用户 -->
+	<select id="isExistUserByPhone" parameterType="java.lang.String"
+		resultType="int">
+		select count(telPhone) from t_member_info where 1=1
+		<if test="_parameter != null">
+			and telPhone = #{telPhone,jdbcType=VARCHAR}
+		</if>
+	</select>
+	<!-- 保存用户 -->
+	<insert id="saveUserForMap" parameterType="java.util.Map">
+		insert into
+		t_member_info(member_id,password,telPhone,member_type,member_status,create_time,update_time,send_flag,finish_flag,remark)
+		values (#{memberId},#{password},#{telPhone},#{memberType},#{memberStatus},#{createTime},#{updateTime},#{sendFlag},#{finishFlag},#{remark})
+	</insert>
+
+	<!-- 根据电话更新 -->
+	<update id="updateUserInfoByTelPhone" parameterType="java.util.Map">
+		update t_member_info
+		<trim prefix="set" suffixOverrides=",">
+		<if test="name != null">name=#{name},</if>
+		<if test="identityNum != null">identity_num=#{identityNum},</if>
+		<if test="password != null">password = #{password},</if>
+		<if test="memberType != null">member_type=#{memberType},</if>
+		<if test="memberStatus != null">member_status=#{memberStatus},</if>
+		<if test="updateTime != null">update_time = #{updateTime},</if>
+		<if test="companyId != null">companyId=#{companyId},</if>
+		<if test="email != null">email = #{email},</if>
+		<if test="sendFlag != null">send_flag = #{sendFlag},</if>
+		<if test="finishFlag != null">finish_flag=#{finishFlag},</if>
+		</trim>
+		where telPhone = #{telPhone}
+	</update>
+
+	<!-- 通过电话查询个人信息 -->
+	<select id="queryPersonInfo" parameterType="java.lang.String"
+		resultType="java.util.Map">
+		select member_id memberId,password,finish_flag finishFlag,send_flag sendFlag,identity_num identityNum from t_member_info where telPhone=#{telPhone}
+	</select>
+	<!-- 更新简历完成度 -->
+	<update id="updateFinishFlagValue" parameterType="java.util.Map">
+		update t_member_info set finish_flag=#{finishFlag} where telPhone=#{telPhone}
+	</update>
+	<!-- 更新密码 -->
+	<update id="updatePwdByTelPhone" parameterType="java.util.Map">
+		update t_member_info set password=#{password} where telPhone=#{telPhone}
+	</update>
+	<!-- 更新手机号 -->
+	<update id="updateTelPhoneByTelPhone" parameterType="java.util.Map">
+		update t_member_info set telPhone=#{newTelPhone} where telPhone=#{telPhone}
+	</update>
+	<!-- 更新更新邮箱 -->
+	<update id="updateEmailByTelPhone" parameterType="java.util.Map">
+		update t_member_info set email=#{email} where telPhone=#{telPhone}
+	</update>
+	
+	<!-- 更新会员状态 -->
+	<update id="updateStatusByTel" parameterType="java.util.Map">
+		update t_member_info set status=#{status} where telPhone=#{telPhone} and status='0'
+	</update>	
+</mapper>

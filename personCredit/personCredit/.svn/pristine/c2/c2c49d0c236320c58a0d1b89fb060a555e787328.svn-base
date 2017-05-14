@@ -1,0 +1,140 @@
+package com.csmf.service.impl;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+
+import com.csmf.common.StatusCode;
+import com.csmf.dao.ISeqNoDAO;
+import com.csmf.dao.PersonEducationDao;
+import com.csmf.dao.UserRegisterDao;
+import com.csmf.dto.send.SendEducation;
+import com.csmf.dto.send.SendPersonInfo;
+import com.csmf.service.FabricService;
+import com.csmf.service.PersonEducationService;
+import com.csmf.util.DateUtil;
+
+import net.sf.json.JSONObject;
+
+@Service("personEducationService")
+public class PersonEducationSeviceImpl implements PersonEducationService {
+
+	private Log log = LogFactory.getLog(this.getClass());
+
+	@Resource
+	private PersonEducationDao personEducationDao;
+	
+	@Resource
+	private UserRegisterDao userRegisterDao;
+
+	@Resource
+	private ISeqNoDAO seqNoDAO;
+	
+	@Resource
+	private FabricService fabricService;
+
+	public Map<String,Object> savePersonEducationInfo(Map param) throws Exception {
+		Map<String,Object> result = new HashMap<String,Object>();
+		if(param!=null){
+			String telPhone = (String)param.get("telPhone");
+			String saveFlag = (String)param.get("saveFlag");
+			param.put("id", seqNoDAO.getFlwNo("PS", "E"));
+			if(!StringUtils.isEmpty(telPhone)){
+				Map<String,Object> personMap = userRegisterDao.queryPersonInfo(telPhone);
+				String identityNum = (String) personMap.get("identityNum");
+				String sendFlag = (String) personMap.get("sendFlag");
+				String finishFlag = (String) personMap.get("finishFlag");
+				if (finishFlag != null && "0".equals(String.valueOf(finishFlag.charAt(0)))) {
+					result.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+					result.put(StatusCode.MSG, "还未填写基本信息");
+					return result;
+				}
+				if (!StringUtils.isEmpty(saveFlag)) {
+					if ("local".equals(saveFlag)) {
+						personEducationDao.savePersonEducationInfo(param);
+					}
+					if ("block".equals(saveFlag)) {
+						String json = beanToJson(param);
+						result = fabricService.sendToBlock(sendFlag, identityNum, json);
+						if(StatusCode.STATUS_FAIL.equals((String)result.get(StatusCode.STATUS))){
+							return result;
+						}
+						personEducationDao.savePersonEducationInfo(param);
+					}
+					finishFlag = (new StringBuffer(finishFlag)).replace(1, 2, "1").toString();
+					param.put("finishFlag", finishFlag);
+					userRegisterDao.updateFinishFlagValue(param);
+					result.put(StatusCode.STATUS, StatusCode.STATUS_OK);
+					result.put(StatusCode.MSG, "保存成功");
+				} else {
+					result.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+					result.put(StatusCode.MSG, "保存失败,参数出错");
+				}
+			}else{
+				result.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+				result.put(StatusCode.MSG, "信息丢失");
+			}
+		}else{
+			result.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+			result.put(StatusCode.MSG, "参数为空");
+		}
+		return result;
+	}
+
+	public Map<String,Object> updateEducationInfoById(Map<String, Object> param) throws Exception {
+		String saveFlag = (String)param.get("saveFlag");
+		String telPhone = (String)param.get("telPhone");
+		Map<String,Object> resultMap = new HashMap<String,Object>();
+		if (!StringUtils.isEmpty(saveFlag)) {
+			if ("local".equals(saveFlag)) {
+				personEducationDao.updateEducationInfoById(param);// 更新
+				resultMap.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+				resultMap.put(StatusCode.MSG, "保存成功");
+			}
+			if ("block".equals(saveFlag)) {
+				Map<String,Object> personMap = userRegisterDao.queryPersonInfo(telPhone);
+				String sendFlag = (String) personMap.get("sendFlag");
+				String identityNum = (String) personMap.get("identityNum");
+				resultMap = fabricService.sendToBlock(sendFlag,identityNum,beanToJson(param));
+				if(StatusCode.STATUS_FAIL.equals((String)resultMap.get(StatusCode.STATUS))){
+					return resultMap;
+				}
+				personEducationDao.updateEducationInfoById(param);
+			}
+		} else {
+			resultMap.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+			resultMap.put(StatusCode.MSG, "保存失败,参数出错");
+		}
+		return resultMap;
+	}
+	
+
+	public List queryAllEducationById(String memberId) throws Exception {
+		return personEducationDao.queryAllEducationById(memberId);
+	}
+	
+	public String beanToJson(Map<String,Object> param) throws Exception{
+		SendEducation educ = new SendEducation(); 
+		if(param !=null){
+			educ.setSchoolName((String)param.get("schoolName"));
+			educ.setAdmissionTime(DateUtil.dateToString((Date)param.get("admissionTime")));
+			educ.setGraduationTime(DateUtil.dateToString((Date)param.get("graduationTime")));
+			educ.setEducationBackground((String)param.get("educationBackground"));
+			educ.setMajor((String)param.get("major"));
+			educ.setStatus((String)param.get("status"));
+			educ.setCredentials((String)param.get("credentials"));
+			JSONObject obj = JSONObject.fromObject(educ);
+			return obj.toString();
+		}else{
+			throw new Exception("请求失败，参数为空");
+		}
+	}
+}

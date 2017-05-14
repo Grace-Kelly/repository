@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>    
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.csmf.dao.CompanyAdminDao">
+	
+	
+	<insert id="saveCompanyAdmin" parameterType="java.util.HashMap">
+		INSERT into t_company_login (id,company_no,passwd,person_no,create_time,update_time) 
+		VALUES (#{companyId},#{companyNo},#{passwd},#{personNo},SYSDATE(),SYSDATE())
+	</insert>
+	
+	<select id="queryCompanyAdmin" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		SELECT company_no "companyNo",status "status_auth",person_no "personNo",passwd from t_company_login 
+		where company_no = #{companyNo} 
+		and  person_no = #{personNo}
+	</select>
+	
+	<update id="updateCompanylogin" parameterType="java.util.HashMap">
+		update t_company_login l SET l.status='1' where l.company_no=#{companyNo} and l.person_no=#{personNo}
+	</update>
+	
+	<select id="queryMermberIDBy" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+	
+		SELECT memberId "memberId",identity_num "idNum" FROM t_person_info 
+		<where>
+			<if test="id !=null and id!=''">
+			  and identity_num = #{id}
+			</if>		
+			<if test="telPhone !=null and telPhone!=''">
+				and telPhone = #{tel}
+			</if>
+			
+			<if test="name!=null and name!=''">
+				and name = #{name}
+			</if>
+		
+		</where>
+		 
+	</select>
+	
+	
+	
+	
+	
+	<select id="queryIsSendResumeByID" parameterType="string" resultType="string">
+		SELECT memberId FROM t_member_info where sendFlag= '1' and identity_num= #{id}
+	</select>
+
+	
+</mapper>

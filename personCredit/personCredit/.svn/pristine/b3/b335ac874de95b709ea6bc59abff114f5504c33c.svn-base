@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8" ?>    
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.csmf.dao.PersonCertDao">
+	<insert id="saveCertInfo" parameterType="java.util.HashMap">
+		INSERT into t_certificate (id,member_id,certificate_time,name,certificate_num,update_time,create_time,remark,save_flag) 
+		<trim prefix="values (" suffix=")" suffixOverrides="," >      
+         <if test="id != null" >#{id},</if>      
+         <if test="memberId != null" >#{memberId},</if>
+         <if test="certificateTime != null" >#{certificateTime},</if>
+         <if test="name != null" >#{name},</if>
+         <if test="certificateNum != null" >#{certificateNum},</if>
+         <if test="updateTime != null" >#{updateTime},</if>
+         <if test="createTime != null" >#{createTime},</if>
+         <if test="remark != null" >#{remark},</if>
+         <if test="saveFlag != null" >#{saveFlag},</if>
+        </trim>
+	</insert>
+	
+	<update id="updateCertInfoById" parameterType="java.util.HashMap">
+		update t_certificate 
+		<trim prefix="set "  suffixOverrides="," > 
+		         <if test="certificateTime != null" >certificate_time=#{certificateTime},</if>
+		         <if test="name != null" >name=#{name},</if>
+		         <if test="certificateNum != null" >certificate_num=#{certificateNum},</if>
+		         <if test="updateTime != null" >update_time=#{updateTime},</if>
+		         <if test="remark != null" >remark=#{remark},</if>
+		         <if test="saveFlag != null" >save_flag=#{saveFlag}},</if>
+		</trim>
+		where member_id=#{memberId} and id=#{id}
+	</update>
+	
+	<select id="queryCertInfoById" parameterType="java.lang.String" resultType="java.util.HashMap">
+		select id,
+        	DATE_FORMAT(certificate_time,'%Y/%m/%d') as certificateTime,
+        	name as name,
+        	certificate_num as certificateNum,
+        	save_flag as saveFlag
+        from t_certificate where member_id=#{memberId} 	
+	</select>
+</mapper>

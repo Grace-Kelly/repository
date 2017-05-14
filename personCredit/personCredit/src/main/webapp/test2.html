@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+<script type="text/javascript" src="js/jquery-1.8.3.min.js"></script>
+</head>
+<body>
+	<div>
+		公司企业名称:<input type="text" id="companyName"><br/>
+		执业编号:<input type="text" id="licenseNum"><br/>
+		企业地址:<input type="text" id="address"><br/>
+		上传营业执照:<input type="text" id="licenseImage"><br/>
+		<button id="submit">提交</button>
+	</div>
+</body>
+</html>
+<script>
+	$(function(){
+		$("#submit").click(function(){
+			var companyName = $("#companyName").val();
+			var licenseNum = $("#licenseNum").val();
+			var address = $("#address").val();
+			var licenseImage = $("#licenseImage").val();
+			var company = {
+					"companyName":companyName,
+					"licenseNum":licenseNum,
+					"address":address,
+					"licenseImage":licenseImage
+			}
+			console.log(JSON.stringify(company))
+			$.ajax({
+				type:"post",
+				url:"companyAdmin/companyInfoAuth.do",
+		    	data:JSON.stringify(company),
+		    	dataType:"json",
+		    	contentType:"application/json",
+				success:function(data){
+		    		alert(data.msg)
+		    	},
+			 		error:function(){
+			 			alert('系统异常');
+			 	}
+			});
+		});
+		
+	});
+</script>

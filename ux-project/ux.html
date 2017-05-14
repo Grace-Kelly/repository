@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="format-detection" content="telephone=no"/>
+  <meta name="format-detection" content="telephone=no">
+  <title>UX测试</title>
+  <link rel="stylesheet" href="assets/css/main.css"/>
+  <link rel="stylesheet" href="assets/fonts/font-awesome/css/font-awesome.min.css"/>
+</head>
+<body>
+<!--                      start-header               -->
+<header>
+    <div class="ux-tabSwitchParent">
+        <!--选项卡-->
+          <div id='uxTabSwitch'>
+            <div data-targent='uxTabSwitch1' class="on">页面</div>
+            <div data-targent='uxTabSwitch2'>模块</div>
+            <div data-targent='uxTabSwitch3'>组件</div>
+          </div>
+    </div>
+    <div id="ux-zoom" class="ux-zoom-widget">
+      <button class="ux-zoom-in"></button>
+      <div class="ux-zoom-text">100%</div>
+      <button class="ux-zoom-out"></button>
+    </div>
+</header>
+<div class="ux-content">
+  <iframe id="iframe" src="page1.html" 
+            frameborder="0" 
+            align="center"
+            scrolling="yes"
+            marginheight="50"
+            leftmargin="50"
+            topmargin="50">
+  </iframe>
+</div>
+
+<div class="ux-left-sidebar">
+  <div class="ux-tabSwitchTarget" style="display: block" id='uxTabSwitch1'>
+          <p class="ux-leftTabtitle">全部页面 <span>(3)</span> </p>
+          <ul class="ux-tabbox">
+              <li>
+                <div class="ux-pageimg"></div>
+                <div class="ux-pageinformation">
+                   <p>page1</p>
+                   <p>第一页</p>
+                </div>
+              </li>
+              <li>
+                <div class="ux-pageimg"></div>
+                <div class="ux-pageinformation">
+                   <p>page2</p>
+                   <p>第二页</p>
+                </div>
+              </li>
+              <li>
+                <div class="ux-pageimg"></div>
+                <div class="ux-pageinformation">
+                   <p>登录</p>
+                   <p>第三页</p>
+                </div>
+              </li>
+          </ul>
+  </div>
+        <!--内容-->
+  <div class="ux-tabSwitchTarget"  id='uxTabSwitch2'>
+            选项卡2，
+            欢迎您学习《最实用的JS代码》
+  </div>
+        <!--内容-->
+  <div class="ux-tabSwitchTarget"  id='uxTabSwitch3'>
+            选项卡33，
+  </div>
+</div>
+         
+<div class="ux-right-sidebar">
+  <div class="ux-tabSwitchTarget"  id="uxTabSwitch1right" style="display: block">
+ <!--<input type="text" id='first' class="wmark" title="Your first name" >
+  <input type="text" id='last' class="wmark" title="Your last name" >
+  <input type="button" id="submit" value="Submit">-->
+     <p class="ux-rightTabtitle">right</p>
+          <ul class="ux-tabbox">
+              <li>
+                <div class="ux-attribute">位置：</div>
+                <div class="ux-pageinformation">
+                   <p class="ux-ifmrow1"><input class="ux-elmSetting ux-elmx"><input class="ux-elmSetting ux-elmy"></p>  
+                   <p class="ux-ifmrow2"><span class="ux-elmTitle">X</span> <span class="ux-elmTitle">Y</span></p>
+                </div>
+              </li>
+              <li>
+                <div class="ux-pageimg"></div>
+                <div class="ux-pageinformation">
+                   <p>page2</p>
+                   <p>第二页</p>
+                </div>
+              </li>
+              <li>
+                <div class="ux-pageimg"></div>
+                <div class="ux-pageinformation">
+                   <p>登录</p>
+                   <p>第三页</p>
+                </div>
+              </li>
+          </ul>
+  </div>
+
+    <div class="ux-tabSwitchTarget" id="uxTabSwitch2right" style="display: none">
+    222
+  </div>
+   <div class="ux-tabSwitchTarget" id="uxTabSwitch3right" style="display: none">
+     333
+   </div>
+</div>
+
+
+
+
+<!--                      start-iframe             -->
+
+
+ <!--<p>[<a href="#" onclick="javascript:bigit()">+</a>]　[<a href="#" onclick="javascript:smait();">-</a>]</p>
+ <button class="try1">控制iframe颜色</button>
+  <div class="try2">点击事件 </div>
+  <div class="try3">
+  </div>
+  <div class="try4">
+  </div>
+  <div class="try5">
+  </div>
+  <div class="try6">
+ </div>-->
+
+<!--                      start-right-article             -->
+
+
+<!--                      starat-footer               -->
+<footer>
+
+</footer>
+</body>
+<script src="assets/js/jquery-2.1.1.min.js"></script>
+<script src="assets/js/main.js"></script>
+<!--<script type="text/javascript" src="assets/js/lazyload/jquery.js"></script>-->
+<!-- <script src="https://cdn.bootcss.com/jquery/3.1.1/jquery.slim.min.js" integrity="sha384-A7FZj7v+d/sdmMqp/nOQwliLvUsJfDHW+k9Omg/a/EheAdgtzNs3hpfag6Ed950n" crossorigin="anonymous"></script> -->
+<!--<script src="https://cdn.bootcss.com/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>-->
+<!--<script src="https://cdn.bootcss.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>-->
+<script>
+
+ 
+        //获取节点的color
+
+ 
+        
+        $(function(){ 
+
+
+var test = document.getElementById("uxTabSwitch"),
+        demo = window.getComputedStyle(test, null); 
+        console.log(demo.color)
+　　}); 
+
+
+</script>
+
+</html>

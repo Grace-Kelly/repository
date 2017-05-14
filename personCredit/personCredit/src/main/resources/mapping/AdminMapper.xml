@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>    
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.csmf.dao.AdminDao">
+	
+	
+	<update id="updateCompanyInfo" parameterType="java.util.HashMap">
+		UPDATE t_company_info SET
+		 social_credit_code = #{socialCreditCode},legal_representative = #{legalRepresentative},identity_num = #{identityNum},
+						name = #{name},company_type = #{companyType},capital = #{capital},scale = #{scale},
+						industry = #{industry},address = #{address},status = #{status},update_time = SYSDATE()
+		WHERE company_id = #{companyId} AND status = '1'
+	</update>
+	
+	<insert id="insertCompanyInfo" parameterType="java.util.HashMap">
+	
+	INSERT INTO t_company_info (company_id,name,license_num,address,create_time,update_time) 
+	VALUES 
+	(#{companyId},#{companyName},#{licenseNum},#{address},SYSDATE(),SYSDATE())
+	
+	</insert>
+	
+	
+	<select id="queryCompanyAuth" parameterType="java.util.HashMap" resultType="string">
+	
+	SELECT l.license_num from t_company_info l where l.name = #{name}
+	
+	</select>
+	
+	
+	<update id="updateCompanyStatus" parameterType="java.util.HashMap">
+		UPDATE t_company_info SET
+		 status = #{status},update_time = SYSDATE()
+		WHERE company_id = #{companyId} AND status = '2'
+	</update>
+	
+	<select id="select" parameterType="java.util.HashMap">
+		SELECT companyId,email,passwd from company_login where email = #{email} 	
+	</select>
+
+	
+</mapper>

@@ -1,0 +1,150 @@
+package com.csmf.service.impl;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+
+import com.csmf.common.StatusCode;
+import com.csmf.dao.ISeqNoDAO;
+import com.csmf.dao.PersonInfoDao;
+import com.csmf.dao.UserRegisterDao;
+import com.csmf.dto.send.SendPersonInfo;
+import com.csmf.service.FabricService;
+import com.csmf.service.PersonInfoService;
+
+import net.sf.json.JSONObject;
+
+@Service("personInfoService")
+public class PersonInfoServiceImpl implements PersonInfoService {
+
+	private Log log = LogFactory.getLog(this.getClass());
+
+	@Resource
+	private PersonInfoDao personInfoDao;
+
+	@Resource
+	private UserRegisterDao userRegisterDao;
+
+	@Resource
+	private ISeqNoDAO seqNoDAO;
+
+	@Resource
+	private FabricService fabricService;
+
+	@Transactional(propagation = Propagation.REQUIRED, timeout = 20, rollbackFor = Exception.class)
+	public Map<String, Object> savePersonInfo(Map<String, Object> param) throws Exception {
+		Map<String, Object> result = new HashMap<String, Object>();
+		if (param != null) {
+			String telPhone = (String) param.get("telPhone");
+			param.put("id",seqNoDAO.getFlwNo("PS", "I"));
+			if (!StringUtils.isEmpty(telPhone)) {
+				Map<String, Object> personMap = userRegisterDao.queryPersonInfo(telPhone);
+				String identityNum = (String) personMap.get("identityNum");
+				String sendFlag = (String) personMap.get("sendFlag");
+				String finishFlag = (String) personMap.get("finishFlag");
+				String flag = String.valueOf(finishFlag.charAt(0));
+				if ("0".equals(flag)) {// 为0表示还没有个人信息
+					param.put("memberId", (String) personMap.get("memberId"));
+					String saveFlag = (String) param.get("saveFlag");
+					if (!StringUtils.isEmpty(saveFlag)) {
+						if ("local".equals(saveFlag)) {
+							personInfoDao.savePersonInfo(param);// 保存基本信息
+						}
+						if ("block".equals(saveFlag)) {
+							result = fabricService.sendToBlock(sendFlag, identityNum, beanToJson(param));
+							if (StatusCode.STATUS_FAIL.equals((String) result.get(StatusCode.STATUS))) {
+								return result;
+							}
+							personInfoDao.savePersonInfo(param);
+						}
+						// 将已添加个人信息的标示更新为1
+						finishFlag = (new StringBuffer(finishFlag)).replace(0, 1, "1").toString();
+						param.put("finishFlag", finishFlag);
+						userRegisterDao.updateFinishFlagValue(param);
+						result.put(StatusCode.STATUS, StatusCode.STATUS_OK);
+						result.put(StatusCode.MSG, "保存成功");
+					} else {
+						result.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+						result.put(StatusCode.MSG, "保存失败,参数出错");
+					}
+				} else {
+					result.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+					result.put(StatusCode.MSG, "个人信息已存在，无需在添加");
+				}
+			} else {
+				result.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+				result.put(StatusCode.MSG, "信息丢失");
+			}
+		} else {
+			result.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+			result.put(StatusCode.MSG, "参数为空");
+		}
+		return result;
+	}
+
+	@Transactional(propagation = Propagation.REQUIRED, timeout = 20, rollbackFor = Exception.class)
+	public Map<String, Object> updatePersonInfoByTel(Map<String, Object> param) throws Exception {
+		String saveFlag = (String) param.get("saveFlag");
+		String telPhone = (String) param.get("telPhone");
+		Map<String, Object> resultMap = new HashMap<String, Object>();
+		if (!StringUtils.isEmpty(saveFlag)) {
+			if ("local".equals(saveFlag)) {
+				personInfoDao.updatePersonInfoById(param);// 更新
+				resultMap.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+				resultMap.put(StatusCode.MSG, "保存成功");
+			}
+			if ("block".equals(saveFlag)) {
+				Map<String, Object> personMap = userRegisterDao.queryPersonInfo(telPhone);
+				String sendFlag = (String) personMap.get("sendFlag");
+				String identityNum = (String) personMap.get("identityNum");
+				resultMap = fabricService.sendToBlock(sendFlag, identityNum, beanToJson(param));
+				if (StatusCode.STATUS_FAIL.equals((String) resultMap.get(StatusCode.STATUS))) {
+					return resultMap;
+				}
+				personInfoDao.updatePersonInfoById(param);
+			}
+		} else {
+			resultMap.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+			resultMap.put(StatusCode.MSG, "保存失败,参数出错");
+		}
+		return resultMap;
+	}
+
+	public Map<String, Object> queryInfoById(String telPhone) throws Exception {
+		Map<String, Object> result = new HashMap<String,Object>();
+		if(!StringUtils.isEmpty(telPhone)){
+			result =  (Map<String, Object>) personInfoDao.queryInfoById(telPhone);
+		}else{
+			result.put(StatusCode.MSG, "查询参数出错");
+		}
+		return result;
+	}
+
+	public Map<String, Object> validateInfo(JSONObject jsonObject) throws Exception {
+		return null;
+	}
+
+	public String beanToJson(Map<String, Object> param) throws Exception {
+		SendPersonInfo info = new SendPersonInfo();
+		if (param != null) {
+			info.setName((String) param.get("name"));
+			info.setGender((String) param.get("gender"));
+			info.setBornDate((String) param.get("bornDate"));
+			info.setWorkYear((String) param.get("workYear"));
+			info.setEmail((String) param.get("email"));
+			info.setIncome((String) param.get("income"));
+			JSONObject obj = JSONObject.fromObject(info);
+			return obj.toString();
+		} else {
+			throw new Exception("请求失败，参数为空");
+		}
+	}
+}

@@ -48,24 +48,25 @@
 <style lang='scss' scoped>
 
 .indexPage{
-  height                                   : 100%;
-  background-color                         : #fff;
+  width              : 100%;
+  height             : 100%;
+  background-color   : #fff;
 }
 .child-view {
- transition                                : all 0.3s cubic-bezier(0,1,.4,1);
-    height                                 : 100%;
+ transition          : all 0.3s cubic-bezier(0,1,.4,1);
+    height           : 100%;
 }
  
 .slide-left-enter,
 .slide-right-leave-active {
-    opacity                                : 0.25;
-    -webkit-transform                      : translate(100%, 0);
-    transform                              : translate(100%, 0);
+    opacity          : 0.25;
+    -webkit-transform: translate(100%, 0);
+    transform        : translate(100%, 0);
 }
 .slide-left-leave-active,
 .slide-right-enter {
-    opacity                                : 0.25;
-    -webkit-transform                      : translate(-100%, 0);
-    transform                              : translate(-100%, 0);
+    opacity          : 0.25;
+    -webkit-transform: translate(-100%, 0);
+    transform        : translate(-100%, 0);
 }
 </style>

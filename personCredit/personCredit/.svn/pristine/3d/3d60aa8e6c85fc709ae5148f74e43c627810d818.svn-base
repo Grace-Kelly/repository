@@ -1,0 +1,139 @@
+package com.csmf.service.impl;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.stereotype.Service;
+
+import com.csmf.dao.DictionaryDao;
+import com.csmf.service.DictionaryService;
+import com.sun.javafx.scene.layout.region.SliceSequenceConverter;
+
+@Service("dictionaryService")
+public class DictionaryServiceImpl implements DictionaryService {
+
+	private Log log = LogFactory.getLog(this.getClass());
+	
+	@Resource
+	private DictionaryDao dictionaryDao;
+	
+	public static Map<String,List<Map>> dictionaryMap = new ConcurrentHashMap<String, List<Map>>();
+	public static Map<String,Map<Object,List<Map>>> dictionaryTo2Map = new ConcurrentHashMap<String,Map<Object,List<Map>>>();
+	
+	/**
+	 * 查询一级数据字典
+	 */
+	public Map selectDictionaryInfo(Map param) throws Exception{
+		Map result = new HashMap();
+		String dataType = (String) param.get("dataType");
+		if(dictionaryMap.containsKey(dataType)){
+			result.put("data", dictionaryMap.get(dataType));
+			result.put("status", true);
+			return result;
+		}
+		List<Map> dictionaryList = dictionaryDao.selectDictionaryInfo(param);
+		if(dictionaryList != null && dictionaryList.size() > 0){
+			dictionaryMap.put(dataType, dictionaryList);
+			result.put("data", dictionaryMap.get(dataType));
+			result.put("status", true);
+			return result;
+		}
+		
+		result.put("data", dictionaryMap.get(dataType));
+		result.put("status", true);
+		return result;
+	}
+	
+	/**
+	 * 查询二级数据字典
+	 * @param param
+	 * @return
+	 * @throws Exception
+	 */
+	public Map selectDictionaryInfoTo2(Map param) throws Exception{
+		Map result = new HashMap();
+		String dataType = (String) param.get("dataType");
+		if(dataType.equals("skillLanguage") || dataType.equals("certificate") || dataType.equals("industry")){//技能、行业、证书
+			if(dictionaryTo2Map.containsKey(dataType)){
+				Map<Object,List<Map>> map = dictionaryTo2Map.get(dataType);
+				result.put("data", map);
+				result.put("status", true);
+				return result;
+			}else{
+				List<Map> dictionaryList = dictionaryDao.selectDictionaryInfo(param);
+				Map<Object,List<Map>> dicMap = new HashMap();
+				for(int i = 0 ; i < dictionaryList.size() ; i++){
+					
+					param.put("upLevel", dictionaryList.get(i).get("id"));
+					List<Map> list = dictionaryDao.selectDictionaryInfo(param);
+					dicMap.put(dictionaryList.get(i), list);
+				}
+				dictionaryTo2Map.put(dataType, dicMap);
+				result.put("data", dicMap);
+				result.put("status", true);
+				return result;
+			}
+		}
+		
+		result.put("status", false);
+		result.put("errorMsg", "查询失败！");
+		return result;
+	}
+	
+	/**
+	 * 查询省份市区
+	 */
+	public Map selectProvinceAndCityInfo() throws Exception{
+		Map result = new HashMap();
+		Map param = new HashMap();
+		/*if(dictionaryTo2Map.containsKey("ProvinceAndCity")){
+			Map<Object,List<Map>> map = dictionaryTo2Map.get("ProvinceAndCity");
+			result.put("data", map);
+			result.put("status", true);
+			return result;
+		}else{
+			List<Map> ProvinceAndCityList = dictionaryDao.selectProvinceInfo();
+			Map<Object,List<Map>> pdnMap = new HashMap();
+			for(int i = 0 ; i < ProvinceAndCityList.size() ; i++){
+				
+				param.put("provinceid", ProvinceAndCityList.get(i).get("provinceid"));
+				List<Map> list = dictionaryDao.selectCityInfo(param);
+				pdnMap.put(ProvinceAndCityList.get(i), list);
+			}
+			dictionaryTo2Map.put("ProvinceAndCity", pdnMap);
+			result.put("data", pdnMap);
+			result.put("status", true);
+			return result;
+		}*/
+		if(dictionaryMap.containsKey("province")){
+			result.put("province", dictionaryMap.get("province"));
+			result.put("city", dictionaryMap.get("city"));
+			result.put("status", true);
+			return result;
+		}
+		List<Map> provinceList = dictionaryDao.selectProvinceInfo();
+		List<Map> cityList = dictionaryDao.selectCityInfo(param);
+		if(provinceList != null && provinceList.size() > 0){
+			dictionaryMap.put("province", provinceList);
+			dictionaryMap.put("city", cityList);
+			result.put("province", dictionaryMap.get("province"));
+			result.put("city", dictionaryMap.get("city"));
+			result.put("status", true);
+			return result;
+		}
+		
+		result.put("status", true);
+		return result;
+		
+		
+	}
+	
+	
+	
+}

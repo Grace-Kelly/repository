@@ -1,0 +1,162 @@
+package com.csmf.service.impl;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.stereotype.Service;
+
+import com.csmf.common.Encryption;
+import com.csmf.common.StatusCode;
+import com.csmf.dao.UserRegisterDao;
+import com.csmf.dto.User;
+import com.csmf.service.UserRegisterService;
+
+@Service("registerService")
+public class UserRegistrServiceImpl implements UserRegisterService {
+
+	private Log log = LogFactory.getLog(this.getClass());
+
+	@Resource
+	private UserRegisterDao userRegisterDao;
+
+	public Boolean isExistUserByPhone(Map map) {
+		String telPhone = (String) map.get("telPhone");
+		return isExistUserByPhone(telPhone);
+	}
+
+	public Boolean isExistUserByPhone(String telPhone) {
+		int result = 0;
+		if (telPhone != null && !telPhone.equals("")) {
+			result = userRegisterDao.isExistUserByPhone(telPhone);
+			if (result >= 1) {
+				return true;
+			} else {
+				return false;
+			}
+		}
+		return false;
+	}
+
+	@SuppressWarnings({ "unused", "rawtypes" })
+	public void saveUser(Map user) throws Exception {
+		userRegisterDao.saveUserForMap(user);
+	}
+
+	public User getUserByPhone(String telPhone) {
+		if (telPhone != null && !telPhone.equals("")) {
+			try {
+				User user = userRegisterDao.getUserbyPhone(telPhone);
+				if (user != null) {
+					return user;
+				} else {
+					throw new Exception("查询用户：" + telPhone + "不存在。\n");
+				}
+			} catch (Exception e) {
+				log.error("查询用户：" + telPhone + "出错。\n" + e.getStackTrace());
+			}
+		} else {
+			log.info("用户账号值为空，无法查询");
+		}
+		return null;
+	}
+
+	public void updateUserInfoByTelPhone(Map<String, Object> param) throws Exception {
+		String telPhone = (String) param.get("telPhone");
+		if (telPhone != null && !telPhone.equals("")) {
+			userRegisterDao.updateUserInfoByTelPhone(param);
+		} else {
+			throw new Exception("手机号为不能为空。更新用户信息失败。");
+		}
+
+	}
+
+	public String getMemberIdByTelPhone(String telPhone) throws Exception {
+		if (telPhone != null && !telPhone.equals("")) {
+			return userRegisterDao.getMemberIdByTelPhone(telPhone);
+		} else {
+			throw new Exception("用户的电话号码为空，查询失败");
+		}
+	}
+
+	public Map queryPersonInfo(String telPhone) throws Exception {
+		Map map = userRegisterDao.queryPersonInfo(telPhone);
+		return map;
+	}
+
+	public Boolean checkPwd(String telPhone, String pwd, Map param) throws Exception {
+		Map map = userRegisterDao.queryPersonInfo(telPhone);
+		if(map!=null){
+			String passwd = (String) map.get("password");
+			param.put("memberId", (String) map.get("memberId"));
+			param.put("memberStatus", (String) map.get("status"));
+			return passwd.equals(Encryption.MD5Encrypt(pwd));
+		}else{
+			return false;
+		}
+		
+	}
+
+	public String setFinishFlagValue(String type, String finishFlag) throws Exception {
+		if (type != null && !type.equals("")) {
+			if (type.equals(StatusCode.JSON_INFO)) {
+				return (new StringBuffer(finishFlag)).replace(0, 1, "1").toString();
+			} else if (type.equals(StatusCode.JSON_EDUCATION)) {
+				return (new StringBuffer(finishFlag)).replace(1, 2, "1").toString();
+			} /*else if (type.equals(StatusCode.JSON_WORK_EXPE)) {
+				return (new StringBuffer(finishFlag)).replace(2, 3, "1").toString();
+			} else if (type.equals(StatusCode.JSON_PROJECT_EXPE)) {
+				return (new StringBuffer(finishFlag)).replace(3, 4, "1").toString();
+			} else if (type.equals(StatusCode.JSON_TRAIN)) {
+				return (new StringBuffer(finishFlag)).replace(4, 5, "1").toString();
+			} else if (type.equals(StatusCode.JSON_CERT)) {
+				return (new StringBuffer(finishFlag)).replace(5, 6, "1").toString();
+			} else {
+				return (new StringBuffer(finishFlag)).replace(6, 7, "1").toString();
+			}*/
+		}
+		throw new Exception("简历标识不能为空");
+	}
+
+	public void updateFinishFlagValue(String telPhone, String finishFlag) throws Exception {
+		Map map = new HashMap();
+		if (telPhone != null && !telPhone.equals("") && finishFlag != null && !finishFlag.equals("")) {
+			map.put("telPhone", telPhone);
+			map.put("finishFlag", finishFlag);
+			userRegisterDao.updateFinishFlagValue(map);
+		} else {
+			throw new Exception("更新失败手机号为空");
+		}
+	}
+
+	public void updatePwdByTelPhone(Map map) throws Exception {
+		String telPhone = (String) map.get("telPhone");
+		String password = (String) map.get("password");
+		if (telPhone != null && !telPhone.equals("") && password != null && !password.equals("")) {
+			userRegisterDao.updatePwdByTelPhone(map);
+		} else {
+			throw new Exception("更新失败手机号为空");
+		}
+	}
+
+	public void updateTelPhoneByTelPhone(Map param) throws Exception {
+		String telPhone = (String) param.get("telPhone");
+		if (telPhone != null && !telPhone.equals("")) {
+			userRegisterDao.updateTelPhoneByTelPhone(param);
+		} else {
+			throw new Exception("手机号为不能为空。修改手机失败。");
+		}
+
+	}
+
+	public void updateStatusByTel(Map<String, Object> param) throws Exception {
+		userRegisterDao.updateStatusByTel(param);
+	}
+	
+	public void updateSendFlag(Map<String, Object> param) throws Exception {
+		userRegisterDao.updateSendFlag(param);
+	}
+}

@@ -1,0 +1,327 @@
+package com.csmf.controller;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.PrintWriter;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.zip.ZipOutputStream;
+
+import javax.annotation.Resource;
+import javax.security.auth.message.callback.PrivateKeyCallback.Request;
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.ibatis.annotations.Param;
+import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.csmf.common.StatusCode;
+import com.csmf.dao.AdminDao;
+import com.csmf.dao.CompanyAdminDao;
+import com.csmf.dao.ISeqNoDAO;
+import com.csmf.dao.SecretKeyDAO;
+import com.csmf.dto.CompanyInfo;
+import com.csmf.resume.ResumeUpload;
+import com.csmf.resume.ResumeUploadService;
+import com.csmf.service.AdminService;
+import com.csmf.service.CompanyAdminService;
+import com.csmf.service.FabricService;
+import com.csmf.service.UserRegisterService;
+import com.csmf.util.RequestJsonFormat;
+
+import net.sf.json.JSONObject;
+
+@Controller
+@RequestMapping("/companyAdmin")
+public class CompanyAdminController {
+	
+	private Log log = LogFactory.getLog(this.getClass());
+	@Resource
+	private CompanyAdminService companyAdminService;
+	@Resource
+	AdminDao adminDao;
+	@Resource
+	ISeqNoDAO seqNoDAO;
+	@Resource
+	ResumeUploadService resumeUpload;
+	@Resource
+	FabricService fabricService;
+	@Resource
+	CompanyAdminDao companyAdminDao;
+	@Resource
+	SecretKeyDAO secretKeyDAO;
+	
+	/**
+	 * 修改企业资料（企业审核用）
+	 * 
+	 * @param request
+	 * @param response
+	 */
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	@RequestMapping("/companyInfoAuth.do")
+	public @ResponseBody Map<String,Object> updateCompanyInfo(HttpServletRequest request,HttpSession httpSession) {
+		
+		Map result = new HashMap();
+		result.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+		result.put(StatusCode.MSG, "认证失败");
+		try {
+			String companyNo =  (String) (httpSession.getAttribute("memberId")!=null?httpSession.getAttribute("memberId"):"");
+			String personNo =  (String) (httpSession.getAttribute("personNo")!=null?httpSession.getAttribute("personNo"):"");
+			String statusAuth =  (String) (httpSession.getAttribute("status_auth")!=null?httpSession.getAttribute("status_auth"):"");
+			JSONObject jsonObject = RequestJsonFormat.toJsonObject(request);
+			String companyName = jsonObject.getString("companyName");
+			
+			if(jsonObject != null){
+				Map param = new HashMap();
+				param.put("companyName", jsonObject.getString("companyName"));
+				param.put("companyId", seqNoDAO.getFlwNo("accountNo", "COM"));				
+				param.put("licenseImage", jsonObject.getString("licenseImage"));				
+				param.put("address", jsonObject.getString("address"));
+				//param.put("remark", jsonObject.getString("remark"));
+				param.put("licenseNum", jsonObject.getString("licenseNum"));
+				param.put("companyNo", companyNo);
+				param.put("personNo", personNo);
+				if(!companyNo.equals(companyName) || "".equals(companyName)){
+					result.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+					result.put(StatusCode.MSG, "企业名与机构名不符");
+					return result;
+				}
+				String licenseNum = jsonObject.getString("licenseNum");
+				if(licenseNum==null){
+					result.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+					result.put(StatusCode.MSG, "企业名执行编码不可为空");
+					return result;
+				}
+				if(statusAuth.equals("1")){
+					result.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+					result.put(StatusCode.MSG, "企业已认证");
+					return result;
+				}
+				Map<String,Object> nameMap = new HashMap<String,Object>();
+				nameMap.put("name", companyName);
+				String res = secretKeyDAO.queryCompanyReg(param);
+				if(res!=null){
+					result.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+					result.put(StatusCode.MSG, "企业已认证");
+					return result;
+				}
+				Map<String,Object> dataMap=fabricService.registerFarbric(licenseNum);
+				if(dataMap.get("status").equals("ok")){
+					companyAdminService.saveCompanyInfo(param);
+					result.put(StatusCode.STATUS, StatusCode.STATUS_OK);
+					result.put(StatusCode.MSG, "认证成功");
+					httpSession.setAttribute("status_auth","1");
+				}				
+			}
+		} catch (Exception e) {
+			log.error("企业认证异常", e);
+			result.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+			result.put(StatusCode.MSG, "认证失败");
+			return result;
+		}
+		return result;
+	}
+	
+	
+	
+	@RequestMapping(value="companyLogin.do",method=RequestMethod.POST)
+	public @ResponseBody Map<String,Object> companyLogin(HttpServletRequest request,HttpSession httpSession) throws Exception{
+			
+		JSONObject jsonObject = RequestJsonFormat.toJsonObject(request);	
+		String companyNo = jsonObject.getString("companyNo");
+		
+		String passwd = jsonObject.getString("passwd");
+		
+		String personNo = jsonObject.getString("personNo");
+		
+		Map<String,Object> dataMap = new HashMap<String,Object>();
+		
+		dataMap.put("companyNo", companyNo);
+		dataMap.put("passwd", passwd);
+		dataMap.put("personNo", personNo);
+		Map<String,Object> resultMap = companyAdminService.loginCompany(dataMap);
+		
+		String stauts = (String) resultMap.get(StatusCode.STATUS);
+		
+		if(stauts.equals(StatusCode.STATUS_OK)){
+			httpSession.setAttribute("memberId", resultMap.get("companyNo"));
+			httpSession.setAttribute("personNo", resultMap.get("personNo"));
+			httpSession.setAttribute("status_auth", resultMap.get("status_auth"));
+		}
+
+		return resultMap;
+	}
+	@RequestMapping(value="resumeupload.do")
+	public @ResponseBody Map<String,Object> resumeUplaod(@RequestParam(value = "file", required = false) MultipartFile file,
+			HttpServletRequest request,HttpSession httpSession){
+		Map<String,Object> resultMap = new HashMap<String,Object>();
+        String statusAuth =  (String) (httpSession.getAttribute("status_auth")!=null?httpSession.getAttribute("status_auth"):"");
+
+		 if(statusAuth.equals("0")){
+			 resultMap.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+			 resultMap.put(StatusCode.MSG,"企业未认证");
+	        	return resultMap;
+	        }
+		
+		ZipOutputStream out = null;
+		
+		String path = request.getSession().getServletContext().getRealPath("");
+		
+		path += File.separator;
+		File files = new File(path+file.getOriginalFilename());  
+		
+		
+		InputStream in = null;  
+        try {  
+ 
+            in = file.getInputStream();  
+            byte[] data = new byte[1024];
+            int len =0;
+            FileOutputStream bufOs = new FileOutputStream(files);
+            while ((len = in.read(data, 0, data.length)) > 0) {
+                bufOs.write(data, 0, len);
+            }
+        } catch (Exception e) {  
+            e.printStackTrace();  
+        } finally {  
+            try {  
+                // 关闭输入流  
+                in.close();  
+            } catch (Exception e) {  
+                e.printStackTrace();  
+            }  
+        }  
+        String companyNo =  (String) (httpSession.getAttribute("memberId")!=null?httpSession.getAttribute("memberId"):"");
+        
+        Map<String,Object> dataMap = new HashMap<String,Object>();
+        dataMap.put("name", companyNo);
+        String lNo;
+		try {
+			lNo = adminDao.queryCompanyAuth(dataMap);
+		} catch (Exception e) {
+			log.error("查询异常", e);
+			resultMap.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+			return resultMap;
+		}
+        try {
+			resultMap = resumeUpload.resumeZipParse(files,lNo);
+		} catch (Exception e) {
+			resultMap.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+			log.error("上传失败", e);
+		}
+
+		return resultMap;
+	}
+	
+	@RequestMapping(value="companyRegrister.do",method=RequestMethod.POST)
+	public @ResponseBody Map<String,Object> companyRegister(HttpServletRequest request) throws Exception{
+			
+		
+		JSONObject jsonObject = RequestJsonFormat.toJsonObject(request);
+		
+		String email = jsonObject.getString("personNo");
+		String passwd = jsonObject.getString("passwd");
+		String companyNo = jsonObject.getString("companyNo");
+		Map<String,Object> map = new HashMap<String,Object>();
+		map.put("personNo", email);
+		map.put("passwd", passwd);
+		map.put("companyNo", companyNo);
+		Map<String,Object> resultMap = companyAdminService.registerCompanyAdmin(map);
+		
+		
+		return resultMap;
+	}
+	
+	@RequestMapping(value="resumeAnalysis.do")
+	public @ResponseBody Map<String,Object> resumeAnalysis(@RequestParam(value = "file", required = false) MultipartFile file,
+			@Param("type") String types,@Param("id") String id,HttpSession httpSession){
+		
+		InputStream inputStream=null;
+		
+		Map<String,Object> resultMap  = new HashMap<String,Object>();
+		
+		String originalFilename = file.getOriginalFilename();
+		String[] split = originalFilename.split("\\.", originalFilename.length());
+		String fileType = split[split.length-1];
+	    String mererId =  (String) (httpSession.getAttribute("memberId")!=null?httpSession.getAttribute("memberId"):"");
+		String statusAuth =  (String) (httpSession.getAttribute("status_auth")!=null?httpSession.getAttribute("status_auth"):"");
+		if(mererId.isEmpty()){
+			resultMap.put(StatusCode.STATUS, "会话超时，请重新登陆");
+			return resultMap;
+		}
+		if(statusAuth.equals("1")){
+			resultMap.put(StatusCode.STATUS, "企业未认证");
+			return resultMap;
+		}
+		String login = isRegFarbric(mererId,statusAuth,mererId);
+	    if(!statusAuth.equals("1")){
+	    	resultMap.put(StatusCode.STATUS, "企业未认证");
+			return resultMap;
+	    }
+		types = types!=null?types:"";
+		if(types.isEmpty()){
+			types = "51job";
+		}
+	    
+		try {
+			inputStream = file.getInputStream();
+			
+			List<Map<String,Object>> list = companyAdminService.resumeAnalysis(inputStream, types,id,login);
+			if(list.size()==0){
+				resultMap.put(StatusCode.STATUS, StatusCode.STATUS_FAIL);
+				resultMap.put(StatusCode.MSG, "简历库无此人信息");
+			}
+			resultMap.put(StatusCode.STATUS, StatusCode.STATUS_OK);
+			resultMap.put("list", list);
+			
+		} catch (IOException e) {
+			log.error("IO异常", e);
+		}finally{
+			if(inputStream!=null){
+				try {
+					inputStream.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		
+		
+		return resultMap;
+		
+	}
+	
+	
+	private String isRegFarbric(String companyName,String statusAuth,String mererId){
+		String login = null;
+		Map<String,Object> param = new HashMap<String,Object>();
+		if(!mererId.isEmpty() && statusAuth.isEmpty()){
+			param.put("mererId", mererId);
+			login = secretKeyDAO.queryidBymemberId(param);
+		}else{
+			if("1".equals(statusAuth)){
+				param.put("name", companyName);
+				login = secretKeyDAO.queryCompanyReg(param);
+			}
+		}
+		return login;
+	}
+	
+	
+}

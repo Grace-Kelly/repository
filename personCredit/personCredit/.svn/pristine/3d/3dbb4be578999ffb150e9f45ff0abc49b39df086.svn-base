@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>    
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.csmf.dao.DictionaryDao">
+	
+	
+	<select id="selectDictionaryInfo" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		SELECT id,type_name typeName,data_type dataType,data_name dataName,
+				up_level upLevel FROM t_data_dic 
+		WHERE data_type = #{dataType} 
+		<if test="upLevel != null and upLevel != ''">
+			AND up_level = #{upLevel}
+		</if>
+		<if test="upLevel == null or upLevel == ''">
+			AND up_level IS NULL
+		</if>
+	</select>
+	
+	<select id="selectSkillInfo" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		SELECT id,type_name typeName,skill_type skillType,skill_name skillName,
+				up_level upLevel FROM t_skill_data_dic 
+		WHERE data_type = #{dataType} 
+		<if test="upLevel != null and upLevel != ''">
+			AND up_level = #{upLevel}
+		</if>
+		<if test="upLevel == null or upLevel == ''">
+			AND up_level IS NULL
+		</if>
+	</select>
+	
+	<select id="selectProvinceInfo"  resultType="java.util.HashMap">
+		SELECT provinceid,province FROM t_provinces
+	</select>
+	
+	<select id="selectCityInfo" parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		SELECT cityid,city,provinceid FROM t_cities
+	</select>
+
+	
+</mapper>

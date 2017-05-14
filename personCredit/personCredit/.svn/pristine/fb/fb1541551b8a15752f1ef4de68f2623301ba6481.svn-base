@@ -1,0 +1,47 @@
+package com.csmf.service.impl;
+
+import com.csmf.dao.PersonCertDao;
+import com.csmf.service.PersonCertService;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.stereotype.Service;
+
+import javax.annotation.Resource;
+import java.util.List;
+import java.util.Map;
+
+@Service("personCertService")
+public class PersonCertServiceImpl implements PersonCertService {
+
+	private Log log = LogFactory.getLog(this.getClass());
+
+	@Resource
+	private PersonCertDao personCertDao;
+
+	public void saveCertInfo(Map<String, Object> param){
+		try {
+			personCertDao.saveCertInfo(param);
+		} catch (Exception e) {
+			log.error("保存证书失败：",e);
+		}
+	}
+
+	public void updateCertInfoById(Map<String, Object> param) throws Exception {
+		try {
+			personCertDao.updateCertInfoById(param);
+		} catch (Exception e) {
+			log.error("修改证书失败：",e);
+		}
+	}
+
+	public List queryCertInfoById(String memberId) throws Exception {
+		List resultList = null;
+		try {
+			resultList = personCertDao.queryCertInfoById(memberId);
+		} catch (Exception e) {
+			log.error("查询证书失败：",e);
+		}
+		return resultList;
+	}
+}

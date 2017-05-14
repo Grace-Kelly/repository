@@ -1,0 +1,102 @@
+package com.csmf.service.impl;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.annotation.Resource;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.springframework.stereotype.Service;
+
+import com.csmf.dao.ISeqNoDAO;
+import com.csmf.dao.PersonInfoDao;
+import com.csmf.service.PersonInfoService;
+import com.csmf.util.DateUtil;
+
+import net.sf.json.JSONObject;
+
+
+@Service("personInfoService")
+public class PersonInfoServiceImpl implements PersonInfoService {
+	
+	private Log log = LogFactory.getLog(this.getClass());
+	
+	@Resource
+	private PersonInfoDao personInfoDao;
+	
+	@Resource
+	private ISeqNoDAO seqNoDAO;
+
+	public void savePersonInfo(Map<String, Object> param) throws Exception {
+		try{
+			personInfoDao.savePersonInfo(param);
+		}catch (Exception e) {
+			log.error("保存个人基本信息失败",e);
+		}
+	}
+
+	public void updatePersonInfoByTel(Map<String, Object> param) throws Exception {
+		try{
+			personInfoDao.updatePersonInfoById(param);
+		}catch (Exception e) {
+			log.error("更新个人基本信息失败",e);
+		}
+	}
+
+	public Map<String, Object> queryInfoById(String telPhone) throws Exception {
+		Map resultMap = null;
+		try{
+			resultMap = (Map<String,Object>)personInfoDao.queryInfoById(telPhone);
+		}catch (Exception e) {
+			log.error("更新个人基本信息失败",e);
+		}
+		return resultMap;
+	}
+	
+	public Map<String, Object> validateInfo(JSONObject jsonObject) throws Exception{
+		Map<String,Object> result = new HashMap<String,Object>();
+		String name = (String) jsonObject.get("name");
+		// String identityNum = (String) jsonObject.get("identityNum");
+		String email = (String) jsonObject.get("email");
+		//String origin = (String) jsonObject.get("origin");
+		String gender = (String) jsonObject.get("gender");
+		//String highestEducation = (String) jsonObject.get("highestEducation");
+		//String political = (String) jsonObject.get("political");
+		//String nation = (String) jsonObject.get("nation");
+		//String residence = (String) jsonObject.get("residence");
+		//String marry = (String) jsonObject.get("marry");
+		String bornYear = (String) jsonObject.get("bornYear");
+		String workYear = (String) jsonObject.get("workYear");
+		String address = (String) jsonObject.get("address");
+		String income = (String) jsonObject.get("income");
+		//做request传进来的数据校验
+		/**
+		 * 校验信息
+		 */
+		String id = seqNoDAO.getFlwNo("PS", "I");
+		result.put("id", id);
+		result.put("name", name);
+		// paramMap.put("identityNum", identityNum);
+		//result.put("origin", origin);
+		//result.put("highestEducation", highestEducation);
+		//result.put("political", political);
+		//result.put("nation", nation);
+		//result.put("residence", residence);
+		//result.put("marry", marry);
+		result.put("gender", gender);
+		result.put("bornDate", bornYear);
+		result.put("workYear", workYear);
+		result.put("address", address);
+		result.put("email", email);
+		result.put("income", income);
+		result.put("remark", "remark");
+		Date createTime = DateUtil.stringToDate(DateUtil.dateToString(new Date()));
+		result.put("createTime", createTime);
+		result.put("updateTime", createTime);
+		result.put("saveFlag", "local");// 保存本地数据库
+		return result;
+	}
+	
+}

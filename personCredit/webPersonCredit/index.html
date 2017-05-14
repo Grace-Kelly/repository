@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no, width=device-width">
+  <meta http-equiv="Cache-control" content="no-cache" />
+  <meta http-equiv="pragma" content="no-cache" />
+  <meta name="format-detection" content="telphone=no" />
+  <meta name="format-detection" content="email=no"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-statues-bar-style" content="black"/>
+
+  <link href="./static/css/main.css" rel="stylesheet" />
+<link href="https://cdn.bootcss.com/animate.css/3.5.2/animate.css" rel="stylesheet" />
+  <link href="./static/css/main.css" rel="stylesheet" />
+<link href="./static/css/mui.min.css" rel="stylesheet" />
+<link href="//at.alicdn.com/t/font_putv6t8o6bikke29.css" rel="stylesheet" />
+
+  <!--<link href="./static/css/animate.min.css" rel="stylesheet" />
+  <link href="./static/css/mui.picker.css" rel="stylesheet" />
+  <link href="./static/css/mui.poppicker.css" rel="stylesheet" />-->
+  <title>人才征信</title>
+</head>
+<style> 
+
+</style>
+
+<body>
+  <div id="app" class="mobile_app ">
+    <router-view></router-view>
+  </div>
+</body>
+<!--js控制字体大小-->
+
+<!--<script type="text/javascript">
+(function (doc, win) {
+    var docEl = doc.documentElement;
+    var resizeEvt = 'orientationchange' in window ? 'orientationchange' : 'resize';
+    var recalc = function () {
+      var clientWidth = docEl.clientWidth;
+      console.log(clientWidth);
+      if (!clientWidth) return;
+      docEl.style.fontSize = 10 * (clientWidth / 375) + 'px';
+      console.log(docEl.style.fontSize);
+    };
+    if (!doc.addEventListener) return;
+    win.addEventListener(resizeEvt, recalc, false);
+    doc.addEventListener('DOMContentLoaded', recalc, false);
+  })(document, window);
+</script>-->
+</html>
